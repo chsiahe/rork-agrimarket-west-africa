@@ -31,7 +31,7 @@ export default function ProductDetailScreen() {
     onSuccess: (data) => {
       router.push(`/chat/${data.chatId}`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       Alert.alert('Erreur', 'Impossible de démarrer la conversation');
     },
   });
