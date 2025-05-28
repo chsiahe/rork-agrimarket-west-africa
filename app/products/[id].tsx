@@ -36,6 +36,16 @@ const deliveryModeLabels: Record<DeliveryMode, string> = {
   pickup: 'Retrait sur place'
 };
 
+// Type guard to check if a string is a valid ProductCondition
+const isValidProductCondition = (condition: string): condition is ProductCondition => {
+  return ['new', 'fresh', 'used', 'needs_repair'].includes(condition);
+};
+
+// Type guard to check if a string is a valid DeliveryMode
+const isValidDeliveryMode = (mode: string): mode is DeliveryMode => {
+  return ['local', 'regional', 'pickup'].includes(mode);
+};
+
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   
@@ -100,6 +110,22 @@ export default function ProductScreen() {
       </View>
     );
   }
+
+  // Safe access to condition label with fallback
+  const getConditionLabel = (condition: string): string => {
+    if (isValidProductCondition(condition)) {
+      return conditionLabels[condition];
+    }
+    return condition; // Fallback to original value if not recognized
+  };
+
+  // Safe access to delivery mode label with fallback
+  const getDeliveryModeLabel = (mode: string): string => {
+    if (isValidDeliveryMode(mode)) {
+      return deliveryModeLabels[mode];
+    }
+    return mode; // Fallback to original value if not recognized
+  };
 
   return (
     <View style={styles.container}>
@@ -194,7 +220,7 @@ export default function ProductScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>État</Text>
               <Text style={styles.infoValue} numberOfLines={1}>
-                {conditionLabels[product.condition]}
+                {getConditionLabel(product.condition)}
               </Text>
             </View>
 
@@ -230,11 +256,11 @@ export default function ProductScreen() {
             <Text style={styles.sectionTitle}>Livraison</Text>
             <View style={styles.deliveryCard}>
               <View style={styles.deliveryModes}>
-                {product.delivery.modes.map((mode: DeliveryMode, index: number) => (
+                {product.delivery.modes.map((mode: string, index: number) => (
                   <View key={index} style={styles.deliveryMode}>
                     <Truck size={16} color={colors.primary} />
                     <Text style={styles.deliveryModeText}>
-                      {deliveryModeLabels[mode]}
+                      {getDeliveryModeLabel(mode)}
                     </Text>
                   </View>
                 ))}
