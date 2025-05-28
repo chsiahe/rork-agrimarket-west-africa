@@ -10,7 +10,7 @@ export default protectedProcedure
     // Initialize sample data if needed
     initializeSampleData();
     
-    const userId = input.userId || ctx.user?.id || '1'; // In real app, get from authenticated user
+    const userId = input.userId || ctx.user?.id || '1';
     
     // Get all chats for the user
     const chats = getChatsForUser(userId);

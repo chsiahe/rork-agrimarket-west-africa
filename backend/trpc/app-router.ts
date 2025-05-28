@@ -1,4 +1,4 @@
-import { router } from './create-context';
+import { createTRPCRouter } from './create-context';
 import hiProcedure from './routes/example/hi/route';
 import listProducts from './routes/products/list/route';
 import createProduct from './routes/products/create/route';
@@ -14,26 +14,26 @@ import getMessages from './routes/messages/get/route';
 import listMessages from './routes/messages/list/route';
 import startChat from './routes/messages/start-chat/route';
 
-export const appRouter = router({
-  example: router({
+export const appRouter = createTRPCRouter({
+  example: createTRPCRouter({
     hi: hiProcedure,
   }),
-  products: router({
+  products: createTRPCRouter({
     list: listProducts,
     create: createProduct,
     get: getProduct,
     incrementView: incrementView,
   }),
-  users: router({
+  users: createTRPCRouter({
     profile: getUserProfile,
     updateProfile: updateUserProfile,
   }),
-  auth: router({
+  auth: createTRPCRouter({
     login: loginUser,
     register: registerUser,
     logout: logoutUser,
   }),
-  messages: router({
+  messages: createTRPCRouter({
     send: sendMessage,
     get: getMessages,
     list: listMessages,

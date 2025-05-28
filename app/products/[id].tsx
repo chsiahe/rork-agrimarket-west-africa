@@ -6,8 +6,9 @@ import { MapPin, Calendar, Eye, MessageCircle, Phone, Share2, Heart } from 'luci
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
+import { ProductCondition } from '@/types/product';
 
-const conditionLabels = {
+const conditionLabels: Record<ProductCondition, string> = {
   new: 'Neuf',
   'like-new': 'Comme neuf',
   good: 'Bon état',
@@ -27,10 +28,10 @@ export default function ProductDetailScreen() {
 
   const incrementViewMutation = trpc.products.incrementView.useMutation();
   const startChatMutation = trpc.messages.startChat.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       router.push(`/chat/${data.chatId}`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       Alert.alert('Erreur', 'Impossible de démarrer la conversation');
     },
   });
@@ -187,7 +188,7 @@ export default function ProductDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>État:</Text>
                 <Text style={styles.detailValue}>
-                  {conditionLabels[product.condition as keyof typeof conditionLabels] || product.condition}
+                  {conditionLabels[product.condition] || product.condition}
                 </Text>
               </View>
             )}

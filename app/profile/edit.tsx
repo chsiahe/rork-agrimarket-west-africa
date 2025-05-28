@@ -64,10 +64,26 @@ export default function EditProfileScreen() {
         avatar: formData.avatar.trim() || undefined,
       });
       
-      // Ensure the user object has the correct types
+      // Ensure the user object has the correct types and all required fields
       const updatedUser = {
-        ...updatedUserData,
+        id: updatedUserData.id,
+        name: updatedUserData.name,
+        email: updatedUserData.email,
+        phone: updatedUserData.phone,
+        avatar: updatedUserData.avatar,
         role: updatedUserData.role as UserRole,
+        location: {
+          city: updatedUserData.city,
+          coordinates: user?.location?.coordinates || { latitude: 0, longitude: 0 }
+        },
+        joinedAt: updatedUserData.joinedAt || user?.joinedAt || new Date().toISOString(),
+        isVerified: updatedUserData.isVerified || user?.isVerified || false,
+        rating: updatedUserData.rating || user?.rating || 0,
+        totalSales: updatedUserData.totalSales || user?.totalSales || 0,
+        totalPurchases: updatedUserData.totalPurchases || user?.totalPurchases || 0,
+        bio: updatedUserData.bio || user?.bio || '',
+        languages: updatedUserData.languages || user?.languages || [],
+        socialMedia: updatedUserData.socialMedia || user?.socialMedia || {},
       };
       
       updateUser(updatedUser);

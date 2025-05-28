@@ -9,7 +9,7 @@ export default protectedProcedure
     chatId: z.string().optional(),
   }))
   .mutation(({ input, ctx }) => {
-    const senderId = ctx.user?.id || '1'; // In real app, get from authenticated user
+    const senderId = ctx.user?.id || '1';
     
     // Get or create chat ID
     const chatId = input.chatId || getOrCreateChat(senderId, input.receiverId);
