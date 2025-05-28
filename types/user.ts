@@ -7,6 +7,22 @@ export type UserRating = {
   createdAt: string;
 };
 
+export type Location = {
+  country: string;
+  region: string;
+  city: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+export type OperatingArea = {
+  regions: string[];
+  maxDeliveryDistance: number; // in km
+  deliveryZones: string[];
+};
+
 export type User = {
   id: string;
   name: string;
@@ -14,13 +30,8 @@ export type User = {
   phone?: string;
   email: string;
   role: UserRole;
-  location: {
-    city: string;
-    coordinates: {
-      latitude: number;
-      longitude: number;
-    };
-  };
+  location: Location;
+  operatingAreas?: OperatingArea;
   verified: boolean;
   rating: number;
   totalRatings: number;

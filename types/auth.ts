@@ -1,7 +1,6 @@
-import { User, UserRole } from './user';
+import { User, UserRole, Location, OperatingArea } from './user';
 
-export type { UserRole } from './user';
-export type { User } from './user';
+export type { UserRole, User, Location, OperatingArea } from './user';
 
 export interface AuthState {
   user: User | null;
@@ -20,8 +19,11 @@ export interface RegisterRequest {
   email: string;
   phone: string;
   password: string;
+  country: string;
+  region: string;
   city: string;
   role: UserRole;
+  operatingAreas?: OperatingArea;
 }
 
 export interface UpdateProfileRequest {
@@ -29,8 +31,11 @@ export interface UpdateProfileRequest {
   name: string;
   email: string;
   phone: string;
+  country: string;
+  region: string;
   city: string;
   avatar?: string;
+  operatingAreas?: OperatingArea;
 }
 
 export interface AuthResponse {

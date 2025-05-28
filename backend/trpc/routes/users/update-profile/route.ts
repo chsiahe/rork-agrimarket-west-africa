@@ -12,11 +12,18 @@ let mockUsers: Record<string, any> = {
     email: 'amadou.diallo@example.com',
     role: 'farmer',
     location: {
+      country: 'Sénégal',
+      region: 'Dakar',
       city: 'Dakar',
       coordinates: {
         latitude: 14.6928,
         longitude: -17.4467
       }
+    },
+    operatingAreas: {
+      regions: ['Dakar', 'Thiès'],
+      maxDeliveryDistance: 100,
+      deliveryZones: ['Marché Sandaga', 'Marché Kermel']
     },
     verified: true,
     rating: 4.8,
@@ -46,6 +53,8 @@ let mockUsers: Record<string, any> = {
     email: 'fatou.sow@example.com',
     role: 'buyer',
     location: {
+      country: 'Sénégal',
+      region: 'Thiès',
       city: 'Thiès',
       coordinates: {
         latitude: 14.7886,
@@ -73,8 +82,15 @@ export default publicProcedure
     name: z.string().min(2),
     email: z.string().email(),
     phone: z.string().min(10),
+    country: z.string().min(2),
+    region: z.string().min(2),
     city: z.string().min(2),
     avatar: z.string().url().optional(),
+    operatingAreas: z.object({
+      regions: z.array(z.string()),
+      maxDeliveryDistance: z.number(),
+      deliveryZones: z.array(z.string())
+    }).optional(),
   }))
   .mutation(({ input }) => {
     // In a real app, you would get the user ID from the authentication context
@@ -108,10 +124,13 @@ export default publicProcedure
       email: input.email,
       phone: input.phone,
       location: {
-        ...existingUser.location,
+        country: input.country,
+        region: input.region,
         city: input.city,
+        coordinates: existingUser.location.coordinates, // Keep existing coordinates
       },
       avatar: input.avatar || existingUser.avatar,
+      operatingAreas: input.operatingAreas || existingUser.operatingAreas,
     };
 
     // Update the mock storage

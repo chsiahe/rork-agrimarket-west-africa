@@ -4,8 +4,10 @@ import { router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useAuthStore } from '@/stores/auth-store';
-import { User, Mail, Lock, Phone, MapPin, Eye, EyeOff, Tractor, ShoppingCart, Building, Truck } from 'lucide-react-native';
-import { UserRole } from '@/types/auth';
+import { User, Mail, Lock, Phone, Eye, EyeOff, Tractor, ShoppingCart, Building, Truck } from 'lucide-react-native';
+import { UserRole, OperatingArea } from '@/types/auth';
+import { LocationSelector } from '@/components/LocationSelector';
+import { OperatingAreaSelector } from '@/components/OperatingAreaSelector';
 
 const roleOptions = [
   {
@@ -41,19 +43,27 @@ export default function RegisterScreen() {
     phone: '',
     password: '',
     confirmPassword: '',
+    country: 'SN',
+    region: '',
     city: '',
     role: 'farmer' as UserRole,
+  });
+  const [operatingAreas, setOperatingAreas] = useState<OperatingArea>({
+    regions: [],
+    maxDeliveryDistance: 50,
+    deliveryZones: []
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOperatingAreas, setShowOperatingAreas] = useState(false);
   
   const { login } = useAuthStore();
   const registerMutation = trpc.auth.register.useMutation();
 
   const handleRegister = async () => {
-    if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.city) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.region || !formData.city) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
 
@@ -75,8 +85,11 @@ export default function RegisterScreen() {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
+        country: formData.country,
+        region: formData.region,
         city: formData.city,
         role: formData.role,
+        operatingAreas: showOperatingAreas ? operatingAreas : undefined,
       });
       
       login(result.user, result.token);
@@ -90,6 +103,21 @@ export default function RegisterScreen() {
 
   const updateFormData = (field: string, value: string | UserRole) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLocationChange = (location: { country: string; region: string; city: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      country: location.country,
+      region: location.region,
+      city: location.city
+    }));
+  };
+
+  const handleRoleSelect = (role: UserRole) => {
+    updateFormData('role', role);
+    // Show operating areas for farmers and distributors
+    setShowOperatingAreas(role === 'farmer' || role === 'distributor');
   };
 
   return (
@@ -112,7 +140,7 @@ export default function RegisterScreen() {
                     styles.roleCard,
                     formData.role === option.value && styles.roleCardActive
                   ]}
-                  onPress={() => updateFormData('role', option.value)}
+                  onPress={() => handleRoleSelect(option.value)}
                 >
                   <IconComponent 
                     size={24} 
@@ -172,16 +200,26 @@ export default function RegisterScreen() {
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <MapPin size={20} color={colors.textLight} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Ville"
-            value={formData.city}
-            onChangeText={(value) => updateFormData('city', value)}
-            autoCapitalize="words"
+        <View style={styles.locationSection}>
+          <LocationSelector
+            country={formData.country}
+            region={formData.region}
+            city={formData.city}
+            onLocationChange={handleLocationChange}
+            label="Votre localisation"
+            required
           />
         </View>
+
+        {showOperatingAreas && (
+          <View style={styles.operatingSection}>
+            <OperatingAreaSelector
+              operatingAreas={operatingAreas}
+              onOperatingAreasChange={setOperatingAreas}
+              userCountry={formData.country}
+            />
+          </View>
+        )}
 
         <View style={styles.inputContainer}>
           <Lock size={20} color={colors.textLight} style={styles.inputIcon} />
@@ -271,9 +309,10 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     paddingBottom: 40,
+    gap: 16,
   },
   roleSection: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   roleTitle: {
     fontSize: 16,
@@ -328,7 +367,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 16,
     paddingHorizontal: 16,
   },
   inputIcon: {
@@ -347,6 +385,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     padding: 4,
+  },
+  locationSection: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  operatingSection: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
   },
   registerButton: {
     backgroundColor: colors.primary,

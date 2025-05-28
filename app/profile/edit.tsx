@@ -16,7 +16,6 @@ import {
   User, 
   Mail, 
   Phone, 
-  MapPin, 
   Camera, 
   Save,
   X
@@ -24,7 +23,9 @@ import {
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/auth-store';
 import { trpc } from '@/lib/trpc';
-import { UserRole } from '@/types/user';
+import { UserRole, OperatingArea } from '@/types/user';
+import { LocationSelector } from '@/components/LocationSelector';
+import { OperatingAreaSelector } from '@/components/OperatingAreaSelector';
 
 export default function EditProfileScreen() {
   const { user, updateUser } = useAuthStore();
@@ -34,14 +35,24 @@ export default function EditProfileScreen() {
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    country: user?.location?.country || 'SN',
+    region: user?.location?.region || '',
     city: user?.location?.city || '',
     avatar: user?.avatar || '',
   });
 
+  const [operatingAreas, setOperatingAreas] = useState<OperatingArea>(
+    user?.operatingAreas || {
+      regions: [],
+      maxDeliveryDistance: 50,
+      deliveryZones: []
+    }
+  );
+
   const updateProfileMutation = trpc.users.updateProfile.useMutation();
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.city.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.country || !formData.region || !formData.city.trim()) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -60,8 +71,11 @@ export default function EditProfileScreen() {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
+        country: formData.country,
+        region: formData.region,
         city: formData.city.trim(),
         avatar: formData.avatar.trim() || undefined,
+        operatingAreas: (user?.role === 'farmer' || user?.role === 'distributor') ? operatingAreas : undefined,
       });
       
       // Ensure the user object has the correct types and all required fields
@@ -73,9 +87,12 @@ export default function EditProfileScreen() {
         avatar: updatedUserData.avatar,
         role: updatedUserData.role as UserRole,
         location: {
+          country: updatedUserData.location.country,
+          region: updatedUserData.location.region,
           city: updatedUserData.location.city,
           coordinates: updatedUserData.location.coordinates
         },
+        operatingAreas: updatedUserData.operatingAreas,
         joinedAt: updatedUserData.joinedAt,
         verified: updatedUserData.verified,
         rating: updatedUserData.rating,
@@ -104,6 +121,17 @@ export default function EditProfileScreen() {
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleLocationChange = (location: { country: string; region: string; city: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      country: location.country,
+      region: location.region,
+      city: location.city
+    }));
+  };
+
+  const showOperatingAreas = user?.role === 'farmer' || user?.role === 'distributor';
 
   return (
     <KeyboardAvoidingView 
@@ -199,22 +227,25 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Localisation</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Ville *</Text>
-              <View style={styles.inputContainer}>
-                <MapPin size={20} color={colors.textLight} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Votre ville"
-                  value={formData.city}
-                  onChangeText={(value) => updateFormData('city', value)}
-                  autoCapitalize="words"
-                />
-              </View>
-            </View>
+            <LocationSelector
+              country={formData.country}
+              region={formData.region}
+              city={formData.city}
+              onLocationChange={handleLocationChange}
+              label="Votre localisation"
+              required
+            />
           </View>
+
+          {showOperatingAreas && (
+            <View style={styles.section}>
+              <OperatingAreaSelector
+                operatingAreas={operatingAreas}
+                onOperatingAreasChange={setOperatingAreas}
+                userCountry={formData.country}
+              />
+            </View>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Photo de profil</Text>

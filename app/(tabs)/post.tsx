@@ -11,6 +11,7 @@ import { categories } from '@/constants/categories';
 import { units, convertUnit } from '@/constants/units';
 import { Dropdown } from '@/components/Dropdown';
 import { DatePicker } from '@/components/DatePicker';
+import { LocationSelector } from '@/components/LocationSelector';
 
 const conditionOptions: { value: ProductCondition; label: string }[] = [
   { value: 'new', label: 'Neuf' },
@@ -33,9 +34,11 @@ export default function PostScreen() {
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('kg');
-  const [country, setCountry] = useState('Sénégal');
-  const [region, setRegion] = useState('');
-  const [city, setCity] = useState('');
+  const [location, setLocation] = useState({
+    country: 'SN',
+    region: '',
+    city: ''
+  });
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState<ProductCondition>('fresh');
   const [startDate, setStartDate] = useState('');
@@ -64,29 +67,32 @@ export default function PostScreen() {
       ]);
       
       // Reset form
-      setImages([]);
-      setTitle('');
-      setPrice('');
-      setNegotiable(false);
-      setDescription('');
-      setQuantity('');
-      setUnit('kg');
-      setRegion('');
-      setCity('');
-      setCategory('');
-      setCondition('fresh');
-      setStartDate('');
-      setEndDate('');
-      setDuration('');
-      setDeliveryModes(['pickup']);
-      setFreeDelivery(true);
-      setDeliveryFees('');
-      setAllowCalls(false);
+      resetForm();
     },
     onError: (error: { message: string }) => {
       Alert.alert('Erreur', error.message);
     }
   });
+
+  const resetForm = () => {
+    setImages([]);
+    setTitle('');
+    setPrice('');
+    setNegotiable(false);
+    setDescription('');
+    setQuantity('');
+    setUnit('kg');
+    setLocation({ country: 'SN', region: '', city: '' });
+    setCategory('');
+    setCondition('fresh');
+    setStartDate('');
+    setEndDate('');
+    setDuration('');
+    setDeliveryModes(['pickup']);
+    setFreeDelivery(true);
+    setDeliveryFees('');
+    setAllowCalls(false);
+  };
 
   const pickImage = async () => {
     if (images.length >= 5) {
@@ -138,7 +144,7 @@ export default function PostScreen() {
   };
 
   const handleSubmit = () => {
-    if (!title || !price || !quantity || !region || !city || !category || !startDate) {
+    if (!title || !price || !quantity || !location.country || !location.region || !location.city || !category || !startDate) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -163,11 +169,7 @@ export default function PostScreen() {
       negotiable,
       quantity: parseFloat(quantity),
       unit,
-      location: {
-        country,
-        region,
-        city,
-      },
+      location,
       category,
       description,
       condition,
@@ -330,42 +332,14 @@ export default function PostScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Localisation</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Pays</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Pays"
-              placeholderTextColor={colors.textLight}
-              value={country}
-              onChangeText={setCountry}
-            />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Région *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Région"
-                placeholderTextColor={colors.textLight}
-                value={region}
-                onChangeText={setRegion}
-              />
-            </View>
-            
-            <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
-              <Text style={styles.label}>Ville/Commune *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ville"
-                placeholderTextColor={colors.textLight}
-                value={city}
-                onChangeText={setCity}
-              />
-            </View>
-          </View>
+          <LocationSelector
+            country={location.country}
+            region={location.region}
+            city={location.city}
+            onLocationChange={setLocation}
+            label="Localisation du produit"
+            required
+          />
         </View>
 
         <View style={styles.section}>
@@ -552,6 +526,11 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: 16,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   sectionTitle: {
     fontSize: 18,

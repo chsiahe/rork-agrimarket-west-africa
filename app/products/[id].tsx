@@ -10,10 +10,9 @@ import { ProductCondition } from '@/types/product';
 
 const conditionLabels: Record<ProductCondition, string> = {
   'new': 'Neuf',
-  'like-new': 'Comme neuf',
-  'good': 'Bon état',
-  'fair': 'État correct',
-  'poor': 'Mauvais état'
+  'fresh': 'Récolte fraîche',
+  'used': 'Occasion',
+  'needs_repair': 'À réviser'
 };
 
 export default function ProductDetailScreen() {
@@ -156,7 +155,9 @@ export default function ProductDetailScreen() {
           <View style={styles.metaInfo}>
             <View style={styles.metaItem}>
               <MapPin size={16} color={colors.textLight} />
-              <Text style={styles.metaText}>{product.location.city}</Text>
+              <Text style={styles.metaText}>
+                {product.location.city}, {product.location.region}
+              </Text>
             </View>
             <View style={styles.metaItem}>
               <Calendar size={16} color={colors.textLight} />
@@ -188,7 +189,31 @@ export default function ProductDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>État:</Text>
                 <Text style={styles.detailValue}>
-                  {conditionLabels[product.condition as ProductCondition] || product.condition}
+                  {conditionLabels[product.condition] || product.condition}
+                </Text>
+              </View>
+            )}
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Localisation:</Text>
+              <Text style={styles.detailValue}>
+                {product.location.city}, {product.location.region}, {product.location.country}
+              </Text>
+            </View>
+
+            {product.delivery.modes.length > 0 && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Livraison:</Text>
+                <Text style={styles.detailValue}>
+                  {product.delivery.modes.map(mode => {
+                    switch(mode) {
+                      case 'local': return 'Livraison locale';
+                      case 'regional': return 'Livraison régionale';
+                      case 'pickup': return 'Retrait sur place';
+                      default: return mode;
+                    }
+                  }).join(', ')}
+                  {product.delivery.freeDelivery && ' (Gratuite)'}
                 </Text>
               </View>
             )}
@@ -224,6 +249,9 @@ export default function ProductDetailScreen() {
                 <Text style={styles.sellerJoined}>
                   Membre depuis {new Date(product.seller.joinedAt).getFullYear()}
                 </Text>
+                {product.seller.verified && (
+                  <Text style={styles.verifiedBadge}>✓ Vérifié</Text>
+                )}
               </View>
             </View>
           </View>
@@ -379,11 +407,14 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 16,
     color: colors.textLight,
+    flex: 1,
   },
   detailValue: {
     fontSize: 16,
     color: colors.text,
     fontWeight: '500',
+    flex: 2,
+    textAlign: 'right',
   },
   descriptionSection: {
     marginBottom: 24,
@@ -422,6 +453,12 @@ const styles = StyleSheet.create({
   sellerJoined: {
     fontSize: 12,
     color: colors.textLight,
+    marginTop: 4,
+  },
+  verifiedBadge: {
+    fontSize: 12,
+    color: colors.secondary,
+    fontWeight: '500',
     marginTop: 4,
   },
   actionContainer: {

@@ -1,84 +1,85 @@
-export type ProductCondition = 'new' | 'like-new' | 'good' | 'fair' | 'poor';
+export type ProductCondition = 'new' | 'fresh' | 'used' | 'needs_repair';
+
 export type DeliveryMode = 'local' | 'regional' | 'pickup';
+
+export type ProductLocation = {
+  country: string;
+  region: string;
+  city: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+export type ProductAvailability = {
+  startDate: string;
+  endDate?: string;
+  duration?: string;
+};
+
+export type ProductDelivery = {
+  modes: DeliveryMode[];
+  freeDelivery: boolean;
+  deliveryFees?: number;
+  maxDeliveryDistance?: number;
+};
+
+export type ProductStatistics = {
+  views: number;
+  favorites: number;
+  inquiries: number;
+};
+
+export type ProductSeller = {
+  id: string;
+  name: string;
+  avatar?: string;
+  location: string;
+  verified: boolean;
+  rating: number;
+  joinedAt: string;
+  phone?: string;
+};
 
 export type Product = {
   id: string;
   title: string;
+  description: string;
   price: number;
   negotiable: boolean;
   quantity: number;
   unit: string;
-  location: {
-    country: string;
-    region: string;
-    city: string;
-  };
   category: string;
-  description: string;
   condition: ProductCondition;
   images: string[];
-  availability: {
-    startDate: string;
-    endDate?: string;
-    duration?: string;
-  };
-  delivery: {
-    modes: readonly DeliveryMode[];
-    freeDelivery: boolean;
-    deliveryFees?: number;
-  };
-  seller: {
-    id: string;
-    name: string;
-    avatar?: string;
-    verified: boolean;
-    phone?: string;
-    allowCalls: boolean;
-    location: string;
-    joinedAt: string;
-  };
-  statistics: {
-    views: number;
-    contacts: number;
-  };
+  location: ProductLocation;
+  availability: ProductAvailability;
+  delivery: ProductDelivery;
+  seller: ProductSeller;
   createdAt: string;
+  updatedAt: string;
+  statistics: ProductStatistics;
   harvestDate?: string;
-  priceHistory?: Array<{
-    date: string;
-    price: number;
-  }>;
+  allowCalls: boolean;
 };
 
-export type Category = {
-  id: string;
-  name: string;
-  icon: string;
-};
-
-export type CreateProductInput = {
+export type CreateProductRequest = {
   title: string;
+  description: string;
   price: number;
   negotiable: boolean;
   quantity: number;
   unit: string;
+  category: string;
+  condition: ProductCondition;
+  images: string[];
   location: {
     country: string;
     region: string;
     city: string;
   };
-  category: string;
-  description: string;
-  condition: ProductCondition;
-  images: string[];
-  availability: {
-    startDate: string;
-    endDate?: string;
-    duration?: string;
-  };
-  delivery: {
-    modes: DeliveryMode[];
-    freeDelivery: boolean;
-    deliveryFees?: number;
-  };
+  availability: ProductAvailability;
+  delivery: ProductDelivery;
   allowCalls: boolean;
 };

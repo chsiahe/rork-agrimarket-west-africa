@@ -4,26 +4,68 @@ import { Image } from 'expo-image';
 import { Search, Filter, MapPin, Eye, Star } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { categories } from '@/constants/categories';
+import { countries, getRegionsByCountry, getCitiesByRegion } from '@/constants/locations';
 import { trpc } from '@/lib/trpc';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Product } from '@/types/product';
+import { Dropdown } from '@/components/Dropdown';
 
 export default function SearchScreen() {
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(params.category as string || '');
-  const [location, setLocation] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const { data: searchResults, isLoading } = trpc.products.list.useQuery({
     search: searchQuery || undefined,
     category: selectedCategory || undefined,
-    location: location || undefined,
+    country: selectedCountry || undefined,
+    region: selectedRegion || undefined,
+    city: selectedCity || undefined,
     limit: 20
   });
 
   const handleCategorySelect = (categoryName: string) => {
     setSelectedCategory(categoryName === selectedCategory ? '' : categoryName);
+  };
+
+  const countryOptions = countries.map(c => ({
+    value: c.code,
+    label: c.name
+  }));
+
+  const regionOptions = selectedCountry 
+    ? getRegionsByCountry(selectedCountry).map(r => ({
+        value: r.name,
+        label: r.name
+      }))
+    : [];
+
+  const cityOptions = selectedCountry && selectedRegion
+    ? getCitiesByRegion(selectedCountry, selectedRegion).map(c => ({
+        value: c,
+        label: c
+      }))
+    : [];
+
+  const handleCountryChange = (countryCode: string) => {
+    setSelectedCountry(countryCode);
+    setSelectedRegion('');
+    setSelectedCity('');
+  };
+
+  const handleRegionChange = (regionName: string) => {
+    setSelectedRegion(regionName);
+    setSelectedCity('');
+  };
+
+  const clearLocationFilters = () => {
+    setSelectedCountry('');
+    setSelectedRegion('');
+    setSelectedCity('');
   };
 
   const renderProduct = ({ item }: { item: Product }) => (
@@ -51,7 +93,7 @@ export default function SearchScreen() {
         <View style={styles.productLocation}>
           <MapPin size={12} color={colors.textLight} />
           <Text style={styles.locationText}>
-            {item.location.city}
+            {item.location.city}, {item.location.region}
           </Text>
         </View>
         <View style={styles.productStats}>
@@ -95,13 +137,50 @@ export default function SearchScreen() {
         <View style={styles.filtersSection}>
           <View style={styles.filterGroup}>
             <Text style={styles.filterLabel}>Localisation</Text>
-            <TextInput
-              style={styles.filterInput}
-              placeholder="Ville ou région"
-              placeholderTextColor={colors.textLight}
-              value={location}
-              onChangeText={setLocation}
-            />
+            
+            <View style={styles.locationFilters}>
+              <View style={styles.filterRow}>
+                <View style={[styles.filterInput, { flex: 1 }]}>
+                  <Dropdown
+                    options={countryOptions}
+                    value={selectedCountry}
+                    onSelect={handleCountryChange}
+                    placeholder="Pays"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.filterRow}>
+                <View style={[styles.filterInput, { flex: 1 }]}>
+                  <Dropdown
+                    options={regionOptions}
+                    value={selectedRegion}
+                    onSelect={handleRegionChange}
+                    placeholder="Région"
+                    disabled={!selectedCountry}
+                  />
+                </View>
+                
+                <View style={[styles.filterInput, { flex: 1, marginLeft: 8 }]}>
+                  <Dropdown
+                    options={cityOptions}
+                    value={selectedCity}
+                    onSelect={setSelectedCity}
+                    placeholder="Ville"
+                    disabled={!selectedRegion}
+                  />
+                </View>
+              </View>
+
+              {(selectedCountry || selectedRegion || selectedCity) && (
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={clearLocationFilters}
+                >
+                  <Text style={styles.clearButtonText}>Effacer les filtres</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       )}
@@ -213,12 +292,27 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text,
   },
+  locationFilters: {
+    gap: 8,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   filterInput: {
     backgroundColor: colors.background,
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: colors.text,
+  },
+  clearButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.textLight,
+    borderRadius: 16,
+  },
+  clearButtonText: {
+    fontSize: 12,
+    color: colors.white,
   },
   categoriesSection: {
     backgroundColor: colors.white,
