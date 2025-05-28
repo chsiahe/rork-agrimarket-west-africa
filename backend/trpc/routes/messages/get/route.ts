@@ -1,44 +1,27 @@
 import { z } from "zod";
-import { publicProcedure } from "@/backend/trpc/create-context";
+import { protectedProcedure } from "@/backend/trpc/create-context";
+import { getMessagesForChat, markMessagesAsRead, initializeSampleData } from "../store";
 
-const mockMessages = [
-  {
-    id: '1',
-    senderId: '2',
-    receiverId: '1',
-    content: "Bonjour, est-ce que le maïs est toujours disponible ?",
-    timestamp: "10:30",
-    read: true,
-  },
-  {
-    id: '2',
-    senderId: '1',
-    receiverId: '2',
-    content: "Oui, il est disponible. Quelle quantité voulez-vous ?",
-    timestamp: "10:32",
-    read: true,
-  },
-  {
-    id: '3',
-    senderId: '2',
-    receiverId: '1',
-    content: "J'aimerais 50kg. Quel est votre meilleur prix ?",
-    timestamp: "10:35",
-    read: false,
-  }
-];
-
-export default publicProcedure
+export default protectedProcedure
   .input(z.object({
     chatId: z.string(),
     limit: z.number().min(1).max(100).default(50),
-    offset: z.number().min(0).default(0)
+    offset: z.number().min(0).default(0),
+    markAsRead: z.boolean().default(true),
   }))
-  .query(({ input }) => {
-    // In a real app, filter by chatId
-    const messages = mockMessages.slice(input.offset, input.offset + input.limit);
-    return {
-      messages: messages.reverse(), // Most recent first
-      hasMore: input.offset + input.limit < mockMessages.length
-    };
+  .query(({ input, ctx }) => {
+    // Initialize sample data if needed
+    initializeSampleData();
+    
+    const userId = ctx.user?.id || '1'; // In real app, get from authenticated user
+    
+    // Get messages for the chat
+    const result = getMessagesForChat(input.chatId, input.limit, input.offset);
+    
+    // Mark messages as read if requested
+    if (input.markAsRead) {
+      markMessagesAsRead(input.chatId, userId);
+    }
+    
+    return result;
   });

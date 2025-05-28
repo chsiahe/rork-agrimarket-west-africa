@@ -1,90 +1,87 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { 
-  Heart, 
-  MessageCircle, 
-  MapPin, 
-  Star, 
-  ArrowLeft, 
-  Phone, 
-  Eye, 
-  Calendar,
-  Truck,
-  Shield,
-  Flag,
-  CheckCircle
-} from 'lucide-react-native';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
-import { LineChart } from '@/components/LineChart';
+import { MapPin, Calendar, Eye, MessageCircle, Phone, Share2, Heart } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
-import { ProductCondition, DeliveryMode } from '@/types/product';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '@/stores/auth-store';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const conditionLabels: Record<ProductCondition, string> = {
+const conditionLabels = {
   new: 'Neuf',
-  fresh: 'Récolte fraîche',
-  used: 'Occasion',
-  needs_repair: 'À réviser'
+  'like-new': 'Comme neuf',
+  good: 'Bon état',
+  fair: 'État correct',
+  poor: 'Mauvais état'
 };
 
-const deliveryModeLabels: Record<DeliveryMode, string> = {
-  local: 'Livraison locale',
-  regional: 'Livraison régionale',
-  pickup: 'Retrait sur place'
-};
-
-// Type guard to check if a string is a valid ProductCondition
-const isValidProductCondition = (condition: string): condition is ProductCondition => {
-  return ['new', 'fresh', 'used', 'needs_repair'].includes(condition);
-};
-
-// Type guard to check if a string is a valid DeliveryMode
-const isValidDeliveryMode = (mode: string): mode is DeliveryMode => {
-  return ['local', 'regional', 'pickup'].includes(mode);
-};
-
-export default function ProductScreen() {
+export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { user } = useAuthStore();
   
-  const { data: product, isLoading, error } = trpc.products.get.useQuery({
-    id: id!
-  });
+  const { data: product, isLoading, error } = trpc.products.get.useQuery(
+    { id: id || '' },
+    { enabled: !!id }
+  );
 
   const incrementViewMutation = trpc.products.incrementView.useMutation();
+  const startChatMutation = trpc.messages.startChat.useMutation({
+    onSuccess: (data) => {
+      router.push(`/chat/${data.chatId}`);
+    },
+    onError: (error) => {
+      Alert.alert('Erreur', 'Impossible de démarrer la conversation');
+    },
+  });
 
-  React.useEffect(() => {
-    if (product) {
-      incrementViewMutation.mutate({ id: product.id });
+  useEffect(() => {
+    if (product && id) {
+      incrementViewMutation.mutate({ id });
     }
-  }, [product]);
+  }, [product, id]);
 
-  const handleReport = () => {
+  const handleContact = () => {
+    if (!product || !user) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour contacter le vendeur');
+      return;
+    }
+
+    if (product.seller.id === user.id) {
+      Alert.alert('Information', 'Vous ne pouvez pas vous contacter vous-même');
+      return;
+    }
+
+    startChatMutation.mutate({
+      otherUserId: product.seller.id,
+    });
+  };
+
+  const handleCall = () => {
+    if (!product?.seller.phone) {
+      Alert.alert('Information', 'Numéro de téléphone non disponible');
+      return;
+    }
+
     Alert.alert(
-      'Signaler cette annonce',
-      'Pourquoi souhaitez-vous signaler cette annonce ?',
+      'Appeler le vendeur',
+      `Voulez-vous appeler ${product.seller.name} ?`,
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Contenu inapproprié', onPress: () => {} },
-        { text: 'Fausse annonce', onPress: () => {} },
-        { text: 'Prix suspect', onPress: () => {} },
+        { 
+          text: 'Appeler', 
+          onPress: () => Linking.openURL(`tel:${product.seller.phone}`)
+        }
       ]
     );
   };
 
-  const handleCall = () => {
-    if (product?.seller.phone) {
-      Alert.alert(
-        'Appeler le vendeur',
-        `Voulez-vous appeler ${product.seller.name} ?`,
-        [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Appeler', onPress: () => {} }
-        ]
-      );
-    }
+  const handleShare = () => {
+    Alert.alert('Partager', 'Fonctionnalité de partage à implémenter');
+  };
+
+  const toggleFavorite = () => {
+    setIsFavorite(!isFavorite);
   };
 
   if (isLoading) {
@@ -98,9 +95,7 @@ export default function ProductScreen() {
   if (error || !product) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>
-          {error?.message || 'Produit non trouvé'}
-        </Text>
+        <Text style={styles.errorText}>Produit non trouvé</Text>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.back()}
@@ -111,225 +106,151 @@ export default function ProductScreen() {
     );
   }
 
-  // Safe access to condition label with fallback
-  const getConditionLabel = (condition: string): string => {
-    if (isValidProductCondition(condition)) {
-      return conditionLabels[condition];
-    }
-    return condition; // Fallback to original value if not recognized
-  };
-
-  // Safe access to delivery mode label with fallback
-  const getDeliveryModeLabel = (mode: string): string => {
-    if (isValidDeliveryMode(mode)) {
-      return deliveryModeLabels[mode];
-    }
-    return mode; // Fallback to original value if not recognized
-  };
-
   return (
-    <View style={styles.container}>
+    <>
       <Stack.Screen 
-        options={{ 
+        options={{
           title: product.title,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <ArrowLeft size={24} color={colors.primary} />
-            </TouchableOpacity>
-          ),
           headerRight: () => (
             <View style={styles.headerActions}>
-              <TouchableOpacity onPress={handleReport}>
-                <Flag size={24} color={colors.textLight} />
+              <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
+                <Share2 size={24} color={colors.text} />
               </TouchableOpacity>
-              <TouchableOpacity style={{ marginLeft: 16 }}>
-                <Heart size={24} color={colors.textLight} />
+              <TouchableOpacity onPress={toggleFavorite} style={styles.headerButton}>
+                <Heart 
+                  size={24} 
+                  color={isFavorite ? colors.primary : colors.text}
+                  fill={isFavorite ? colors.primary : 'none'}
+                />
               </TouchableOpacity>
             </View>
-          )
+          ),
         }} 
       />
       
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <ScrollView 
-          horizontal 
-          pagingEnabled 
-          style={styles.imageCarousel}
-          showsHorizontalScrollIndicator={false}
-          decelerationRate="fast"
-          snapToInterval={screenWidth}
-          snapToAlignment="start"
-        >
-          {product.images.map((image: string, index: number) => (
-            <Image
-              key={index}
-              source={image}
-              style={[styles.productImage, { width: screenWidth }]}
-              contentFit="cover"
-            />
-          ))}
-        </ScrollView>
-
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title} numberOfLines={2}>{product.title}</Text>
-              {product.seller.verified && (
-                <View style={styles.verifiedBadge}>
-                  <Shield size={16} color={colors.primary} />
-                  <Text style={styles.verifiedText}>Vérifié</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>
-                {product.price} FCFA/{product.unit}
-              </Text>
-              {product.negotiable && (
-                <Text style={styles.negotiable}>Prix négociable</Text>
-              )}
-            </View>
-          </View>
-          
-          <View style={styles.location}>
-            <MapPin size={18} color={colors.textLight} />
-            <Text style={styles.locationText} numberOfLines={1}>
-              {product.location.city}, {product.location.region}, {product.location.country}
-            </Text>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Eye size={16} color={colors.textLight} />
-              <Text style={styles.statText}>{product.statistics.views} vues</Text>
-            </View>
-            <View style={styles.stat}>
-              <MessageCircle size={16} color={colors.textLight} />
-              <Text style={styles.statText}>{product.statistics.contacts} contacts</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoCards}>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Quantité disponible</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>
-                {product.quantity} {product.unit}
-              </Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>État</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>
-                {getConditionLabel(product.condition)}
-              </Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Catégorie</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{product.category}</Text>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Disponibilité</Text>
-            <View style={styles.availabilityCard}>
-              <View style={styles.availabilityRow}>
-                <Calendar size={16} color={colors.primary} />
-                <Text style={styles.availabilityText}>
-                  Disponible à partir du {new Date(product.availability.startDate).toLocaleDateString('fr-FR')}
-                </Text>
-              </View>
-              {product.availability.endDate && (
-                <Text style={styles.availabilityDuration}>
-                  Jusqu'au {new Date(product.availability.endDate).toLocaleDateString('fr-FR')}
-                </Text>
-              )}
-              {product.availability.duration && (
-                <Text style={styles.availabilityDuration}>
-                  Durée: {product.availability.duration}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Livraison</Text>
-            <View style={styles.deliveryCard}>
-              <View style={styles.deliveryModes}>
-                {product.delivery.modes.map((mode: string, index: number) => (
-                  <View key={index} style={styles.deliveryMode}>
-                    <Truck size={16} color={colors.primary} />
-                    <Text style={styles.deliveryModeText}>
-                      {getDeliveryModeLabel(mode)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.deliveryFees}>
-                {product.delivery.freeDelivery 
-                  ? 'Livraison gratuite' 
-                  : `Frais de livraison: ${product.delivery.deliveryFees} FCFA`
-                }
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Description</Text>
-            <Text style={styles.description}>
-              {product.description || 'Aucune description fournie.'}
-            </Text>
-          </View>
-
-          {product.priceHistory && product.priceHistory.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Évolution des prix</Text>
-              <LineChart data={product.priceHistory} />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Image Gallery */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={product.images[0]}
+            style={styles.mainImage}
+            contentFit="cover"
+          />
+          {product.images.length > 1 && (
+            <View style={styles.imageIndicator}>
+              <Text style={styles.imageCount}>1/{product.images.length}</Text>
             </View>
           )}
+        </View>
 
-          <View style={styles.sellerCard}>
-            <View style={styles.sellerHeader}>
+        {/* Product Info */}
+        <View style={styles.contentContainer}>
+          <View style={styles.priceSection}>
+            <Text style={styles.price}>{product.price.toLocaleString()} FCFA</Text>
+            <Text style={styles.unit}>/{product.unit}</Text>
+          </View>
+
+          <Text style={styles.title}>{product.title}</Text>
+          
+          <View style={styles.metaInfo}>
+            <View style={styles.metaItem}>
+              <MapPin size={16} color={colors.textLight} />
+              <Text style={styles.metaText}>{product.location.city}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Calendar size={16} color={colors.textLight} />
+              <Text style={styles.metaText}>
+                {new Date(product.createdAt).toLocaleDateString('fr-FR')}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Eye size={16} color={colors.textLight} />
+              <Text style={styles.metaText}>{product.statistics.views} vues</Text>
+            </View>
+          </View>
+
+          {/* Product Details */}
+          <View style={styles.detailsSection}>
+            <Text style={styles.sectionTitle}>Détails</Text>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Catégorie:</Text>
+              <Text style={styles.detailValue}>{product.category}</Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Quantité:</Text>
+              <Text style={styles.detailValue}>{product.quantity} {product.unit}</Text>
+            </View>
+            
+            {product.condition && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>État:</Text>
+                <Text style={styles.detailValue}>
+                  {conditionLabels[product.condition as keyof typeof conditionLabels] || product.condition}
+                </Text>
+              </View>
+            )}
+            
+            {product.harvestDate && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Date de récolte:</Text>
+                <Text style={styles.detailValue}>
+                  {new Date(product.harvestDate).toLocaleDateString('fr-FR')}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Description */}
+          <View style={styles.descriptionSection}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.description}>{product.description}</Text>
+          </View>
+
+          {/* Seller Info */}
+          <View style={styles.sellerSection}>
+            <Text style={styles.sectionTitle}>Vendeur</Text>
+            <View style={styles.sellerInfo}>
               <Image
                 source={product.seller.avatar}
                 style={styles.sellerAvatar}
                 contentFit="cover"
               />
-              <View style={styles.sellerInfo}>
-                <View style={styles.sellerNameRow}>
-                  <Text style={styles.sellerName} numberOfLines={1}>{product.seller.name}</Text>
-                  {product.seller.verified && (
-                    <CheckCircle size={16} color={colors.primary} />
-                  )}
-                </View>
-                <Text style={styles.sellerRole}>Vendeur vérifié</Text>
+              <View style={styles.sellerDetails}>
+                <Text style={styles.sellerName}>{product.seller.name}</Text>
+                <Text style={styles.sellerLocation}>{product.seller.location}</Text>
+                <Text style={styles.sellerJoined}>
+                  Membre depuis {new Date(product.seller.joinedAt).getFullYear()}
+                </Text>
               </View>
-            </View>
-            
-            <View style={styles.contactButtons}>
-              <TouchableOpacity 
-                style={styles.contactButton}
-                onPress={() => router.push(`/chat/${product.seller.id}`)}
-              >
-                <MessageCircle size={20} color={colors.white} />
-                <Text style={styles.contactButtonText}>Message</Text>
-              </TouchableOpacity>
-              {product.seller.allowCalls && product.seller.phone && (
-                <TouchableOpacity 
-                  style={[styles.contactButton, styles.callButton]}
-                  onPress={handleCall}
-                >
-                  <Phone size={20} color={colors.primary} />
-                  <Text style={[styles.contactButtonText, styles.callButtonText]}>
-                    Appeler
-                  </Text>
-                </TouchableOpacity>
-              )}
             </View>
           </View>
         </View>
       </ScrollView>
-    </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionContainer}>
+        <TouchableOpacity 
+          style={styles.callButton}
+          onPress={handleCall}
+        >
+          <Phone size={20} color={colors.white} />
+          <Text style={styles.callButtonText}>Appeler</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.messageButton}
+          onPress={handleContact}
+          disabled={startChatMutation.isLoading}
+        >
+          <MessageCircle size={20} color={colors.white} />
+          <Text style={styles.messageButtonText}>
+            {startChatMutation.isLoading ? 'Chargement...' : 'Message'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 }
 
@@ -337,9 +258,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  scrollContainer: {
-    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -356,137 +274,92 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
-    padding: 16,
+    padding: 32,
   },
   errorText: {
-    color: colors.textLight,
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 16,
+    color: colors.text,
+    fontSize: 18,
+    marginBottom: 24,
   },
   backButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
   backButtonText: {
     color: colors.white,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   headerActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  imageCarousel: {
-    height: 300,
-  },
-  productImage: {
-    height: 300,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  header: {
-    marginBottom: 12,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
     gap: 8,
+  },
+  headerButton: {
+    padding: 8,
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  mainImage: {
+    width: '100%',
+    height: 300,
+  },
+  imageIndicator: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  imageCount: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  contentContainer: {
+    padding: 20,
+  },
+  priceSection: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  price: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  unit: {
+    fontSize: 16,
+    color: colors.textLight,
+    marginLeft: 4,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    flex: 1,
-    lineHeight: 30,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-    flexShrink: 0,
-  },
-  verifiedText: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  price: {
-    fontSize: 20,
     fontWeight: '600',
-    color: colors.primary,
-  },
-  negotiable: {
-    fontSize: 14,
-    color: colors.secondary,
-    fontStyle: 'italic',
-  },
-  location: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 4,
-  },
-  locationText: {
-    color: colors.textLight,
-    flex: 1,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 16,
+    color: colors.text,
     marginBottom: 16,
+  },
+  metaInfo: {
+    flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statText: {
-    fontSize: 14,
-    color: colors.textLight,
-  },
-  infoCards: {
-    flexDirection: 'row',
-    gap: 8,
+    gap: 16,
     marginBottom: 24,
   },
-  infoCard: {
-    flex: 1,
-    backgroundColor: colors.white,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 60,
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  infoLabel: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginBottom: 4,
-  },
-  infoValue: {
+  metaText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    lineHeight: 18,
+    color: colors.textLight,
   },
-  section: {
+  detailsSection: {
     marginBottom: 24,
   },
   sectionTitle: {
@@ -495,123 +368,101 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 12,
   },
-  availabilityCard: {
-    backgroundColor: colors.white,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  availabilityRow: {
+  detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  availabilityText: {
-    fontSize: 14,
-    color: colors.text,
-    flex: 1,
-  },
-  availabilityDuration: {
-    fontSize: 14,
+  detailLabel: {
+    fontSize: 16,
     color: colors.textLight,
-    marginBottom: 4,
   },
-  deliveryCard: {
-    backgroundColor: colors.white,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  deliveryModes: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  deliveryMode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  deliveryModeText: {
-    fontSize: 14,
+  detailValue: {
+    fontSize: 16,
     color: colors.text,
-    flex: 1,
-  },
-  deliveryFees: {
-    fontSize: 14,
     fontWeight: '500',
-    color: colors.primary,
+  },
+  descriptionSection: {
+    marginBottom: 24,
   },
   description: {
     fontSize: 16,
     color: colors.text,
     lineHeight: 24,
   },
-  sellerCard: {
-    backgroundColor: colors.white,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sellerHeader: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  sellerAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+  sellerSection: {
+    marginBottom: 100,
   },
   sellerInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  sellerNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
   },
-  sellerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+  sellerAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  sellerDetails: {
+    marginLeft: 16,
     flex: 1,
   },
-  sellerRole: {
+  sellerName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  sellerLocation: {
     fontSize: 14,
     color: colors.textLight,
+    marginTop: 2,
   },
-  contactButtons: {
+  sellerJoined: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: 4,
+  },
+  actionContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    padding: 20,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 12,
+  },
+  callButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+    paddingVertical: 16,
+    borderRadius: 12,
     gap: 8,
   },
-  contactButton: {
+  callButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  messageButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     gap: 8,
-    minHeight: 48,
   },
-  contactButtonText: {
+  messageButtonText: {
     color: colors.white,
-    fontWeight: '500',
     fontSize: 16,
-  },
-  callButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  callButtonText: {
-    color: colors.primary,
+    fontWeight: '600',
   },
 });

@@ -1,38 +1,36 @@
 import { z } from "zod";
 import { protectedProcedure } from "@/backend/trpc/create-context";
-
-const mockChats = [
-  {
-    id: '1',
-    otherUser: {
-      id: '2',
-      name: 'Fatou Sow',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop'
-    },
-    lastMessage: {
-      content: 'Merci pour votre réponse rapide!',
-      timestamp: '14:30'
-    },
-    unreadCount: 2
-  },
-  {
-    id: '2',
-    otherUser: {
-      id: '3',
-      name: 'Moussa Ba',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
-    },
-    lastMessage: {
-      content: 'Le motoculteur est-il toujours disponible?',
-      timestamp: '12:15'
-    },
-    unreadCount: 0
-  }
-];
+import { getChatsForUser, getUserInfo, initializeSampleData } from "../store";
 
 export default protectedProcedure
-  .input(z.object({ userId: z.string() }))
+  .input(z.object({ 
+    userId: z.string().optional() 
+  }))
   .query(({ input, ctx }) => {
-    // In a real app, you would fetch chats for the specific user
-    return mockChats;
+    // Initialize sample data if needed
+    initializeSampleData();
+    
+    const userId = input.userId || ctx.user?.id || '1'; // In real app, get from authenticated user
+    
+    // Get all chats for the user
+    const chats = getChatsForUser(userId);
+    
+    // Transform chats to include other user info
+    const transformedChats = chats.map(chat => {
+      const otherUserId = chat.participants.find(id => id !== userId) || '';
+      const otherUser = getUserInfo(otherUserId);
+      
+      return {
+        id: chat.id,
+        otherUser,
+        lastMessage: chat.lastMessage ? {
+          content: chat.lastMessage.content,
+          timestamp: chat.lastMessage.timestamp,
+          senderId: chat.lastMessage.senderId,
+        } : null,
+        unreadCount: chat.unreadCount,
+      };
+    });
+    
+    return transformedChats;
   });
