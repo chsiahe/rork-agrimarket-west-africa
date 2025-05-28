@@ -9,10 +9,12 @@ export default protectedProcedure
   .mutation(({ input, ctx }) => {
     const userId = ctx.user?.id || '1';
     
-    // Create or get existing chat
+    // Get or create chat ID
     const chatId = getOrCreateChat(userId, input.otherUserId);
-    const otherUser = getUserInfo(input.otherUserId);
     
+    // Get other user info
+    const otherUser = getUserInfo(input.otherUserId);
+
     return {
       chatId,
       otherUser,

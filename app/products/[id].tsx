@@ -28,10 +28,10 @@ export default function ProductDetailScreen() {
 
   const incrementViewMutation = trpc.products.incrementView.useMutation();
   const startChatMutation = trpc.messages.startChat.useMutation({
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       router.push(`/chat/${data.chatId}`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       Alert.alert('Erreur', 'Impossible de démarrer la conversation');
     },
   });
@@ -188,7 +188,7 @@ export default function ProductDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>État:</Text>
                 <Text style={styles.detailValue}>
-                  {conditionLabels[product.condition] || product.condition}
+                  {conditionLabels[product.condition as ProductCondition] || product.condition}
                 </Text>
               </View>
             )}
@@ -214,7 +214,7 @@ export default function ProductDetailScreen() {
             <Text style={styles.sectionTitle}>Vendeur</Text>
             <View style={styles.sellerInfo}>
               <Image
-                source={product.seller.avatar}
+                source={product.seller.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop"}
                 style={styles.sellerAvatar}
                 contentFit="cover"
               />
@@ -243,11 +243,11 @@ export default function ProductDetailScreen() {
         <TouchableOpacity 
           style={styles.messageButton}
           onPress={handleContact}
-          disabled={startChatMutation.isLoading}
+          disabled={startChatMutation.isPending}
         >
           <MessageCircle size={20} color={colors.white} />
           <Text style={styles.messageButtonText}>
-            {startChatMutation.isLoading ? 'Chargement...' : 'Message'}
+            {startChatMutation.isPending ? 'Chargement...' : 'Message'}
           </Text>
         </TouchableOpacity>
       </View>

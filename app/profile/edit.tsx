@@ -77,13 +77,17 @@ export default function EditProfileScreen() {
           coordinates: user?.location?.coordinates || { latitude: 0, longitude: 0 }
         },
         joinedAt: updatedUserData.joinedAt || user?.joinedAt || new Date().toISOString(),
-        isVerified: updatedUserData.isVerified || user?.isVerified || false,
+        verified: updatedUserData.verified || user?.verified || false,
         rating: updatedUserData.rating || user?.rating || 0,
+        totalRatings: user?.totalRatings || 0,
         totalSales: updatedUserData.totalSales || user?.totalSales || 0,
         totalPurchases: updatedUserData.totalPurchases || user?.totalPurchases || 0,
         bio: updatedUserData.bio || user?.bio || '',
         languages: updatedUserData.languages || user?.languages || [],
         socialMedia: updatedUserData.socialMedia || user?.socialMedia || {},
+        listings: user?.listings || [],
+        reviews: user?.reviews || [],
+        businessInfo: user?.businessInfo,
       };
       
       updateUser(updatedUser);

@@ -24,9 +24,14 @@ export type User = {
   verified: boolean;
   rating: number;
   totalRatings: number;
+  totalSales: number;
+  totalPurchases: number;
   joinedAt: string;
   listings: string[];
   reviews: UserRating[];
+  bio?: string;
+  languages?: string[];
+  socialMedia?: Record<string, string>;
   businessInfo?: {
     companyName: string;
     registrationNumber: string;

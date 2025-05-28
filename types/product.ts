@@ -1,4 +1,4 @@
-export type ProductCondition = 'new' | 'fresh' | 'used' | 'needs_repair';
+export type ProductCondition = 'new' | 'like-new' | 'good' | 'fair' | 'poor';
 export type DeliveryMode = 'local' | 'regional' | 'pickup';
 
 export type Product = {
@@ -34,12 +34,15 @@ export type Product = {
     verified: boolean;
     phone?: string;
     allowCalls: boolean;
+    location: string;
+    joinedAt: string;
   };
   statistics: {
     views: number;
     contacts: number;
   };
   createdAt: string;
+  harvestDate?: string;
   priceHistory?: Array<{
     date: string;
     price: number;

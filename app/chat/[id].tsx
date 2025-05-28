@@ -44,7 +44,7 @@ export default function ChatScreen() {
         flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
       }, 100);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setIsSending(false);
       Alert.alert('Erreur', 'Impossible d\'envoyer le message. Veuillez réessayer.');
       console.error('Send message error:', error);
@@ -52,7 +52,7 @@ export default function ChatScreen() {
   });
 
   // Get other user info from messages
-  const otherUser = messagesData?.messages.length > 0 
+  const otherUser = messagesData?.messages && messagesData.messages.length > 0 
     ? messagesData.messages.find((msg: Message) => msg.senderId !== currentUserId)?.senderId
     : null;
 
