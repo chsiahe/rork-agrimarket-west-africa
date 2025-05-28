@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "@/backend/trpc/create-context";
-import { addProductToStore } from "../list/route";
+import { addProductToStore } from "../get/route";
 
 const createProductSchema = z.object({
   title: z.string().min(1),
