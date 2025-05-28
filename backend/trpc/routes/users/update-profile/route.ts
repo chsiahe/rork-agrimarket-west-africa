@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { publicProcedure } from "@/backend/trpc/create-context";
 import { TRPCError } from "@trpc/server";
+import { User } from "@/types/user";
 
 // Mock user storage (in a real app, this would be a database)
-let mockUsers: Record<string, any> = {
+let mockUsers: Record<string, User> = {
   '1': {
     id: '1',
     name: 'Amadou Diallo',
@@ -118,7 +119,7 @@ export default publicProcedure
     }
 
     // Update user data
-    const updatedUser = {
+    const updatedUser: User = {
       ...existingUser,
       name: input.name,
       email: input.email,

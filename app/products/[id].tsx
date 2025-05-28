@@ -6,13 +6,19 @@ import { MapPin, Calendar, Eye, MessageCircle, Phone, Share2, Heart } from 'luci
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
-import { ProductCondition } from '@/types/product';
+import { ProductCondition, DeliveryMode } from '@/types/product';
 
 const conditionLabels: Record<ProductCondition, string> = {
   'new': 'Neuf',
   'fresh': 'Récolte fraîche',
   'used': 'Occasion',
   'needs_repair': 'À réviser'
+};
+
+const deliveryModeLabels: Record<DeliveryMode, string> = {
+  'local': 'Livraison locale',
+  'regional': 'Livraison régionale',
+  'pickup': 'Retrait sur place'
 };
 
 export default function ProductDetailScreen() {
@@ -205,14 +211,9 @@ export default function ProductDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Livraison:</Text>
                 <Text style={styles.detailValue}>
-                  {product.delivery.modes.map(mode => {
-                    switch(mode) {
-                      case 'local': return 'Livraison locale';
-                      case 'regional': return 'Livraison régionale';
-                      case 'pickup': return 'Retrait sur place';
-                      default: return mode;
-                    }
-                  }).join(', ')}
+                  {product.delivery.modes.map((mode: DeliveryMode) => 
+                    deliveryModeLabels[mode] || mode
+                  ).join(', ')}
                   {product.delivery.freeDelivery && ' (Gratuite)'}
                 </Text>
               </View>

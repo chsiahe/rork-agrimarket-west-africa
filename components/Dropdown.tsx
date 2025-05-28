@@ -15,9 +15,10 @@ interface DropdownProps {
   onSelect: (value: string) => void;
   placeholder: string;
   searchable?: boolean;
+  disabled?: boolean;
 }
 
-export function Dropdown({ options, value, onSelect, placeholder }: DropdownProps) {
+export function Dropdown({ options, value, onSelect, placeholder, disabled = false }: DropdownProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   const selectedOption = options.find(option => option.value === value);
@@ -29,16 +30,24 @@ export function Dropdown({ options, value, onSelect, placeholder }: DropdownProp
 
   return (
     <>
-      <TouchableOpacity style={styles.input} onPress={() => setIsVisible(true)}>
+      <TouchableOpacity 
+        style={[styles.input, disabled && styles.inputDisabled]} 
+        onPress={() => !disabled && setIsVisible(true)}
+        disabled={disabled}
+      >
         <View style={styles.inputContent}>
           {selectedOption?.icon && (
             <Text style={styles.icon}>{selectedOption.icon}</Text>
           )}
-          <Text style={[styles.inputText, !selectedOption && styles.placeholder]}>
+          <Text style={[
+            styles.inputText, 
+            !selectedOption && styles.placeholder,
+            disabled && styles.textDisabled
+          ]}>
             {selectedOption?.label || placeholder}
           </Text>
         </View>
-        <ChevronDown size={20} color={colors.textLight} />
+        <ChevronDown size={20} color={disabled ? colors.border : colors.textLight} />
       </TouchableOpacity>
 
       <Modal visible={isVisible} transparent animationType="fade">
@@ -96,6 +105,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  inputDisabled: {
+    backgroundColor: colors.background,
+    opacity: 0.6,
+  },
   inputContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -111,6 +124,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   placeholder: {
+    color: colors.textLight,
+  },
+  textDisabled: {
     color: colors.textLight,
   },
   modalOverlay: {

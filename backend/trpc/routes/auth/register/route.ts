@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { publicProcedure } from "@/backend/trpc/create-context";
 import { TRPCError } from "@trpc/server";
+import { User } from "@/types/user";
+
+// Mock user storage (in a real app, this would be a database)
+let mockUsers: Record<string, User> = {};
+let userIdCounter = 1;
 
 export default publicProcedure
   .input(z.object({
@@ -8,49 +13,49 @@ export default publicProcedure
     email: z.string().email(),
     phone: z.string().min(10),
     password: z.string().min(6),
+    country: z.string().min(2),
+    region: z.string().min(2),
     city: z.string().min(2),
     role: z.enum(['farmer', 'buyer', 'cooperative', 'distributor']),
+    operatingAreas: z.object({
+      regions: z.array(z.string()),
+      maxDeliveryDistance: z.number(),
+      deliveryZones: z.array(z.string())
+    }).optional(),
   }))
   .mutation(({ input }) => {
-    // Check if user already exists (mock check)
-    if (input.email === 'amadou@example.com' || input.email === 'fatou@example.com') {
+    // Check if email already exists
+    const emailExists = Object.values(mockUsers).some(
+      user => user.email === input.email
+    );
+    
+    if (emailExists) {
       throw new TRPCError({
         code: 'CONFLICT',
-        message: 'Un utilisateur avec cet email existe déjà',
+        message: 'Cette adresse email est déjà utilisée',
       });
     }
 
-    // Get avatar based on role
-    const getAvatarByRole = (role: string) => {
-      switch (role) {
-        case 'farmer':
-          return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d';
-        case 'buyer':
-          return 'https://images.unsplash.com/photo-1494790108755-2616b612b786';
-        case 'cooperative':
-          return 'https://images.unsplash.com/photo-1560250097-0b93528c311a';
-        case 'distributor':
-          return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e';
-        default:
-          return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d';
-      }
-    };
-
     // Create new user
-    const newUser = {
-      id: `user-${Date.now()}`,
+    const userId = userIdCounter.toString();
+    userIdCounter++;
+
+    const newUser: User = {
+      id: userId,
       name: input.name,
       email: input.email,
       phone: input.phone,
-      avatar: getAvatarByRole(input.role),
       role: input.role,
       location: {
+        country: input.country,
+        region: input.region,
         city: input.city,
         coordinates: {
-          latitude: 14.6928,
+          latitude: 14.6928, // Default coordinates (Dakar)
           longitude: -17.4467
         }
       },
+      operatingAreas: input.operatingAreas,
       verified: false,
       rating: 0,
       totalRatings: 0,
@@ -59,17 +64,20 @@ export default publicProcedure
       joinedAt: new Date().toISOString(),
       listings: [],
       reviews: [],
-      bio: '',
+      bio: undefined,
       languages: ['Français'],
       socialMedia: {},
-      businessInfo: undefined
+      businessInfo: undefined,
     };
 
-    // Generate mock JWT token
-    const token = `mock-jwt-token-${newUser.id}-${Date.now()}`;
+    // Store user
+    mockUsers[userId] = newUser;
+
+    // Generate mock token
+    const token = `mock_token_${userId}_${Date.now()}`;
 
     return {
       user: newUser,
-      token,
+      token
     };
   });

@@ -78,36 +78,7 @@ export default function EditProfileScreen() {
         operatingAreas: (user?.role === 'farmer' || user?.role === 'distributor') ? operatingAreas : undefined,
       });
       
-      // Ensure the user object has the correct types and all required fields
-      const updatedUser = {
-        id: updatedUserData.id,
-        name: updatedUserData.name,
-        email: updatedUserData.email,
-        phone: updatedUserData.phone,
-        avatar: updatedUserData.avatar,
-        role: updatedUserData.role as UserRole,
-        location: {
-          country: updatedUserData.location.country,
-          region: updatedUserData.location.region,
-          city: updatedUserData.location.city,
-          coordinates: updatedUserData.location.coordinates
-        },
-        operatingAreas: updatedUserData.operatingAreas,
-        joinedAt: updatedUserData.joinedAt,
-        verified: updatedUserData.verified,
-        rating: updatedUserData.rating,
-        totalRatings: updatedUserData.totalRatings,
-        totalSales: updatedUserData.totalSales,
-        totalPurchases: updatedUserData.totalPurchases,
-        bio: updatedUserData.bio,
-        languages: updatedUserData.languages,
-        socialMedia: updatedUserData.socialMedia,
-        listings: updatedUserData.listings,
-        reviews: updatedUserData.reviews,
-        businessInfo: updatedUserData.businessInfo,
-      };
-      
-      updateUser(updatedUser);
+      updateUser(updatedUserData);
       Alert.alert('Succès', 'Profil mis à jour avec succès', [
         { text: 'OK', onPress: () => router.back() }
       ]);
