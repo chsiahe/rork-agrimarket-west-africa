@@ -1,16 +1,16 @@
 import { z } from "zod";
 import { publicProcedure } from "@/backend/trpc/create-context";
 import { DeliveryMode } from "@/types/product";
-import { getGlobalProducts, addProductToStore as addToGlobalStore } from "../get/route";
+import { getRealProducts, addProductToStore as addToRealStore } from "../get/route";
 
-// Use the shared global products store
+// Use the shared real products store
 function getProducts() {
-  return getGlobalProducts();
+  return getRealProducts();
 }
 
-// Function to add a new product to the global store
+// Function to add a new product to the real store
 export function addProductToStore(product: any) {
-  addToGlobalStore(product);
+  addToRealStore(product);
 }
 
 export default publicProcedure

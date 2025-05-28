@@ -73,7 +73,7 @@ export default function HomeScreen() {
 
       <View style={styles.featured}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Annonces à la une</Text>
+          <Text style={styles.sectionTitle}>Annonces récentes</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
             <Text style={styles.seeAll}>Voir tout</Text>
           </TouchableOpacity>
@@ -82,6 +82,19 @@ export default function HomeScreen() {
         <View style={styles.productGrid}>
           {isLoading ? (
             <Text style={styles.loadingText}>Chargement...</Text>
+          ) : products?.products.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Aucune annonce disponible</Text>
+              <Text style={styles.emptySubtext}>
+                Soyez le premier à publier une annonce !
+              </Text>
+              <TouchableOpacity 
+                style={styles.emptyButton}
+                onPress={() => router.push('/(tabs)/post')}
+              >
+                <Text style={styles.emptyButtonText}>Publier une annonce</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             products?.products.map((product: Product) => (
               <TouchableOpacity 
@@ -138,7 +151,10 @@ export default function HomeScreen() {
         </View>
         <View style={styles.trendingCard}>
           <Text style={styles.trendingText}>
-            Le prix du maïs a augmenté de 12% cette semaine
+            {products?.products.length === 0 
+              ? "Aucune donnée de marché disponible pour le moment"
+              : `${products?.products.length} nouvelles annonces cette semaine`
+            }
           </Text>
         </View>
       </View>
@@ -328,6 +344,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
     fontSize: 16,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textLight,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textLight,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emptyButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  emptyButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '500',
   },
   trending: {
     paddingHorizontal: 16,

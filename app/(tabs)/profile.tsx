@@ -103,6 +103,9 @@ export default function ProfileScreen() {
                 <View style={styles.emptyState}>
                   <Package size={48} color={colors.textLight} />
                   <Text style={styles.emptyText}>Aucune annonce publiée</Text>
+                  <Text style={styles.emptySubtext}>
+                    Commencez par publier votre première annonce
+                  </Text>
                   <TouchableOpacity 
                     style={styles.emptyButton}
                     onPress={() => router.push('/(tabs)/post')}

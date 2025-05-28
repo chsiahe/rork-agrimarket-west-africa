@@ -39,7 +39,7 @@ const deliveryModeLabels: Record<DeliveryMode, string> = {
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   
-  const { data: product, isLoading } = trpc.products.get.useQuery({
+  const { data: product, isLoading, error } = trpc.products.get.useQuery({
     id: id!
   });
 
@@ -85,10 +85,18 @@ export default function ProductScreen() {
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Produit non trouvé</Text>
+        <Text style={styles.errorText}>
+          {error?.message || 'Produit non trouvé'}
+        </Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButtonText}>Retour</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -205,6 +213,11 @@ export default function ProductScreen() {
                   Disponible à partir du {new Date(product.availability.startDate).toLocaleDateString('fr-FR')}
                 </Text>
               </View>
+              {product.availability.endDate && (
+                <Text style={styles.availabilityDuration}>
+                  Jusqu'au {new Date(product.availability.endDate).toLocaleDateString('fr-FR')}
+                </Text>
+              )}
               {product.availability.duration && (
                 <Text style={styles.availabilityDuration}>
                   Durée: {product.availability.duration}
@@ -238,11 +251,11 @@ export default function ProductScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.description}>
-              {product.description}
+              {product.description || 'Aucune description fournie.'}
             </Text>
           </View>
 
-          {product.priceHistory && (
+          {product.priceHistory && product.priceHistory.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Évolution des prix</Text>
               <LineChart data={product.priceHistory} />
@@ -317,10 +330,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
+    padding: 16,
   },
   errorText: {
     color: colors.textLight,
     fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  backButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  backButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '500',
   },
   headerActions: {
     flexDirection: 'row',
@@ -464,6 +491,7 @@ const styles = StyleSheet.create({
   availabilityDuration: {
     fontSize: 14,
     color: colors.textLight,
+    marginBottom: 4,
   },
   deliveryCard: {
     backgroundColor: colors.white,

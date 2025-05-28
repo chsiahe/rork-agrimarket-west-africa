@@ -33,15 +33,19 @@ const createProductSchema = z.object({
 export default publicProcedure
   .input(createProductSchema)
   .mutation(({ input }) => {
+    // Generate unique ID for the product
+    const productId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // Create new product with unique ID
     const newProduct = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: productId,
       ...input,
       seller: {
         id: '1', // Current user ID - in real app this would come from auth context
         name: 'Amadou Diallo',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
         verified: true,
+        phone: '+221 77 123 45 67',
         allowCalls: input.allowCalls
       },
       statistics: {
@@ -51,7 +55,7 @@ export default publicProcedure
       createdAt: new Date().toISOString()
     };
 
-    // Add to global products store
+    // Add to real products store
     addProductToStore(newProduct);
 
     return newProduct;

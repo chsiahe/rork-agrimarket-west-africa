@@ -141,6 +141,13 @@ export default function SearchScreen() {
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Recherche en cours...</Text>
           </View>
+        ) : searchResults?.products.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
+            <Text style={styles.emptySubtext}>
+              Essayez de modifier vos critères de recherche
+            </Text>
+          </View>
         ) : (
           <FlatList
             data={searchResults?.products || []}
@@ -268,6 +275,23 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textLight,
     fontSize: 16,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textLight,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textLight,
+    textAlign: 'center',
   },
   productsList: {
     gap: 12,

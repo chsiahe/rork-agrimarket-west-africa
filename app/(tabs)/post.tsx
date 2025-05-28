@@ -47,36 +47,41 @@ export default function PostScreen() {
   const [allowCalls, setAllowCalls] = useState(false);
 
   const createProductMutation = trpc.products.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (newProduct) => {
       Alert.alert('Succès', 'Votre annonce a été publiée!', [
         { 
-          text: 'OK', 
+          text: 'Voir l\'annonce', 
           onPress: () => {
-            // Reset form
-            setImages([]);
-            setTitle('');
-            setPrice('');
-            setNegotiable(false);
-            setDescription('');
-            setQuantity('');
-            setUnit('kg');
-            setRegion('');
-            setCity('');
-            setCategory('');
-            setCondition('fresh');
-            setStartDate('');
-            setEndDate('');
-            setDuration('');
-            setDeliveryModes(['pickup']);
-            setFreeDelivery(true);
-            setDeliveryFees('');
-            setAllowCalls(false);
-            
-            // Navigate to profile to see the new listing
+            router.push(`/products/${newProduct.id}`);
+          }
+        },
+        { 
+          text: 'Mes annonces', 
+          onPress: () => {
             router.push('/(tabs)/profile');
           }
         }
       ]);
+      
+      // Reset form
+      setImages([]);
+      setTitle('');
+      setPrice('');
+      setNegotiable(false);
+      setDescription('');
+      setQuantity('');
+      setUnit('kg');
+      setRegion('');
+      setCity('');
+      setCategory('');
+      setCondition('fresh');
+      setStartDate('');
+      setEndDate('');
+      setDuration('');
+      setDeliveryModes(['pickup']);
+      setFreeDelivery(true);
+      setDeliveryFees('');
+      setAllowCalls(false);
     },
     onError: (error: { message: string }) => {
       Alert.alert('Erreur', error.message);
