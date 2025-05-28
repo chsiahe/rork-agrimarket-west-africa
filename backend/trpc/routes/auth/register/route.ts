@@ -52,7 +52,17 @@ export default publicProcedure
         }
       },
       verified: false,
+      rating: 0,
+      totalRatings: 0,
+      totalSales: 0,
+      totalPurchases: 0,
       joinedAt: new Date().toISOString(),
+      listings: [],
+      reviews: [],
+      bio: '',
+      languages: ['Français'],
+      socialMedia: {},
+      businessInfo: undefined
     };
 
     // Generate mock JWT token

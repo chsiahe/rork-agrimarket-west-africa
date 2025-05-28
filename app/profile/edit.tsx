@@ -24,7 +24,7 @@ import {
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/auth-store';
 import { trpc } from '@/lib/trpc';
-import { UserRole } from '@/types/auth';
+import { UserRole } from '@/types/user';
 
 export default function EditProfileScreen() {
   const { user, updateUser } = useAuthStore();
@@ -73,21 +73,21 @@ export default function EditProfileScreen() {
         avatar: updatedUserData.avatar,
         role: updatedUserData.role as UserRole,
         location: {
-          city: updatedUserData.city,
-          coordinates: user?.location?.coordinates || { latitude: 0, longitude: 0 }
+          city: updatedUserData.location.city,
+          coordinates: updatedUserData.location.coordinates
         },
-        joinedAt: updatedUserData.joinedAt || user?.joinedAt || new Date().toISOString(),
-        verified: updatedUserData.verified || user?.verified || false,
-        rating: updatedUserData.rating || user?.rating || 0,
-        totalRatings: user?.totalRatings || 0,
-        totalSales: updatedUserData.totalSales || user?.totalSales || 0,
-        totalPurchases: updatedUserData.totalPurchases || user?.totalPurchases || 0,
-        bio: updatedUserData.bio || user?.bio || '',
-        languages: updatedUserData.languages || user?.languages || [],
-        socialMedia: updatedUserData.socialMedia || user?.socialMedia || {},
-        listings: user?.listings || [],
-        reviews: user?.reviews || [],
-        businessInfo: user?.businessInfo,
+        joinedAt: updatedUserData.joinedAt,
+        verified: updatedUserData.verified,
+        rating: updatedUserData.rating,
+        totalRatings: updatedUserData.totalRatings,
+        totalSales: updatedUserData.totalSales,
+        totalPurchases: updatedUserData.totalPurchases,
+        bio: updatedUserData.bio,
+        languages: updatedUserData.languages,
+        socialMedia: updatedUserData.socialMedia,
+        listings: updatedUserData.listings,
+        reviews: updatedUserData.reviews,
+        businessInfo: updatedUserData.businessInfo,
       };
       
       updateUser(updatedUser);

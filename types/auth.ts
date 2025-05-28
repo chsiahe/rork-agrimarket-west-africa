@@ -1,22 +1,7 @@
-export type UserRole = 'farmer' | 'buyer' | 'cooperative' | 'distributor';
+import { User } from './user';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  avatar?: string;
-  role: UserRole;
-  location: {
-    city: string;
-    coordinates: {
-      latitude: number;
-      longitude: number;
-    };
-  };
-  verified: boolean;
-  joinedAt: string;
-}
+export type { UserRole } from './user';
+export type { User } from './user';
 
 export interface AuthState {
   user: User | null;

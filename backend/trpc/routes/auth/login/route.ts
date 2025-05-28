@@ -20,7 +20,24 @@ const mockUsers = [
       }
     },
     verified: true,
+    rating: 4.8,
+    totalRatings: 48,
+    totalSales: 48,
+    totalPurchases: 12,
     joinedAt: '2024-01-15T10:00:00Z',
+    listings: ['1', '2', '3'],
+    reviews: [],
+    bio: 'Agriculteur passionné depuis 15 ans',
+    languages: ['Français', 'Wolof'],
+    socialMedia: {
+      facebook: 'amadou.diallo',
+      whatsapp: '+221771234567'
+    },
+    businessInfo: {
+      companyName: 'Ferme Diallo',
+      registrationNumber: 'SN123456789',
+      description: 'Production de légumes biologiques'
+    }
   },
   {
     id: '2',
@@ -38,7 +55,17 @@ const mockUsers = [
       }
     },
     verified: true,
+    rating: 4.5,
+    totalRatings: 32,
+    totalSales: 0,
+    totalPurchases: 32,
     joinedAt: '2024-02-10T10:00:00Z',
+    listings: [],
+    reviews: [],
+    bio: 'Acheteuse de produits frais pour restaurants',
+    languages: ['Français'],
+    socialMedia: {},
+    businessInfo: undefined
   },
   {
     id: '3',
@@ -56,7 +83,24 @@ const mockUsers = [
       }
     },
     verified: true,
+    rating: 4.7,
+    totalRatings: 25,
+    totalSales: 156,
+    totalPurchases: 0,
     joinedAt: '2024-01-20T10:00:00Z',
+    listings: ['4', '5'],
+    reviews: [],
+    bio: 'Coopérative regroupant 50 agriculteurs locaux',
+    languages: ['Français', 'Wolof', 'Pulaar'],
+    socialMedia: {
+      facebook: 'coop.kaolack',
+      website: 'www.coopkaolack.sn'
+    },
+    businessInfo: {
+      companyName: 'Coopérative Agricole de Kaolack',
+      registrationNumber: 'COOP789123',
+      description: 'Regroupement de producteurs agricoles'
+    }
   },
   {
     id: '4',
@@ -74,7 +118,23 @@ const mockUsers = [
       }
     },
     verified: true,
+    rating: 4.3,
+    totalRatings: 18,
+    totalSales: 0,
+    totalPurchases: 89,
     joinedAt: '2024-02-05T10:00:00Z',
+    listings: [],
+    reviews: [],
+    bio: 'Distributeur spécialisé dans les produits agricoles',
+    languages: ['Français'],
+    socialMedia: {
+      linkedin: 'distribution-senegal'
+    },
+    businessInfo: {
+      companyName: 'Distribution Sénégal SARL',
+      registrationNumber: 'DIST456789',
+      description: 'Distribution de produits agricoles'
+    }
   }
 ];
 
