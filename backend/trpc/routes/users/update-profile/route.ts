@@ -73,7 +73,6 @@ let mockUsers: Record<string, User> = {
     bio: 'Acheteuse de produits frais pour restaurants',
     languages: ['Français'],
     socialMedia: {},
-    businessInfo: undefined
   }
 };
 
