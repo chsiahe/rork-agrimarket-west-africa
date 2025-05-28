@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Home, Search, PlusSquare, MessageCircle, User } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
+import { Home, Search, Plus, MessageCircle, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -9,48 +9,53 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textLight,
         tabBarStyle: {
+          backgroundColor: colors.white,
           borderTopColor: colors.border,
-          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
         },
-        headerStyle: {
-          backgroundColor: colors.surface,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
         },
-        headerTintColor: colors.primary,
+        headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Rechercher',
-          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+          title: 'Recherche',
+          tabBarIcon: ({ color, size }) => <Search size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="post"
         options={{
           title: 'Publier',
-          tabBarIcon: ({ color }) => <PlusSquare size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => <Plus size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
           title: 'Messages',
-          tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
     </Tabs>

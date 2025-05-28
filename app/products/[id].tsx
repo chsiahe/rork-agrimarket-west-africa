@@ -9,11 +9,11 @@ import { useAuthStore } from '@/stores/auth-store';
 import { ProductCondition } from '@/types/product';
 
 const conditionLabels: Record<ProductCondition, string> = {
-  new: 'Neuf',
+  'new': 'Neuf',
   'like-new': 'Comme neuf',
-  good: 'Bon état',
-  fair: 'État correct',
-  poor: 'Mauvais état'
+  'good': 'Bon état',
+  'fair': 'État correct',
+  'poor': 'Mauvais état'
 };
 
 export default function ProductDetailScreen() {
@@ -188,7 +188,7 @@ export default function ProductDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>État:</Text>
                 <Text style={styles.detailValue}>
-                  {conditionLabels[product.condition as ProductCondition] || product.condition}
+                  {conditionLabels[product.condition] || product.condition}
                 </Text>
               </View>
             )}

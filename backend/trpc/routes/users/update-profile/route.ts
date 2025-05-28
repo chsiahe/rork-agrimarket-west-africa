@@ -3,7 +3,7 @@ import { publicProcedure } from "@/backend/trpc/create-context";
 import { TRPCError } from "@trpc/server";
 
 // Mock user storage (in a real app, this would be a database)
-const mockUsers = {
+let mockUsers: Record<string, any> = {
   '1': {
     id: '1',
     name: 'Amadou Diallo',
@@ -80,7 +80,7 @@ export default publicProcedure
     // In a real app, you would get the user ID from the authentication context
     const userId = input.userId || '1';
     
-    const existingUser = mockUsers[userId as keyof typeof mockUsers];
+    const existingUser = mockUsers[userId];
     
     if (!existingUser) {
       throw new TRPCError({
@@ -115,7 +115,7 @@ export default publicProcedure
     };
 
     // Update the mock storage
-    mockUsers[userId as keyof typeof mockUsers] = updatedUser;
+    mockUsers[userId] = updatedUser;
 
     return updatedUser;
   });

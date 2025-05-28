@@ -1,4 +1,4 @@
-import { User } from './user';
+import { User, UserRole } from './user';
 
 export type { UserRole } from './user';
 export type { User } from './user';

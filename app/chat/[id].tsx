@@ -44,7 +44,7 @@ export default function ChatScreen() {
         flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
       }, 100);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setIsSending(false);
       Alert.alert('Erreur', 'Impossible d\'envoyer le message. Veuillez réessayer.');
       console.error('Send message error:', error);
