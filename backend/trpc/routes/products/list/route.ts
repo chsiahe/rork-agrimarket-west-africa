@@ -151,6 +151,56 @@ const mockProducts: Product[] = [
     },
     harvestDate: '2024-01-18T06:00:00Z',
     allowCalls: true
+  },
+  {
+    id: '6',
+    title: 'Cacao brut de qualité',
+    description: 'Fèves de cacao brutes, cultivées de manière durable. Idéal pour la transformation ou la revente.',
+    price: 2500,
+    negotiable: true,
+    quantity: 150,
+    unit: 'kg',
+    category: 'Céréales',
+    condition: 'fresh',
+    images: ['https://images.unsplash.com/photo-1611077449879-828a2e019510?w=400&h=300&fit=crop'],
+    location: {
+      country: 'CI',
+      region: 'Abidjan',
+      city: 'Abidjan',
+      coordinates: {
+        latitude: 5.3602,
+        longitude: -4.0083
+      }
+    },
+    availability: {
+      startDate: '2024-03-10T00:00:00Z',
+      endDate: '2024-05-10T00:00:00Z',
+    },
+    delivery: {
+      modes: ['regional', 'pickup'],
+      freeDelivery: false,
+      deliveryFees: 700,
+      maxDeliveryDistance: 80
+    },
+    seller: {
+      id: '5',
+      name: 'Koffi Kouassi',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop',
+      location: 'Abidjan, Côte d\'Ivoire',
+      verified: true,
+      rating: 4.6,
+      joinedAt: '2024-03-12T10:00:00Z',
+      phone: '+225 07 08 09 10 11'
+    },
+    createdAt: '2024-03-15T10:00:00Z',
+    updatedAt: '2024-03-15T10:00:00Z',
+    statistics: {
+      views: 55,
+      favorites: 18,
+      inquiries: 10
+    },
+    harvestDate: '2024-03-05T06:00:00Z',
+    allowCalls: true
   }
 ];
 

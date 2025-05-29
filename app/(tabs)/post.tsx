@@ -167,7 +167,7 @@ export default function PostScreen() {
         const mappedLocation = mapToWestAfricanLocation(address);
         
         setLocation({
-          country: mappedLocation.country === 'Sénégal' ? 'SN' : mappedLocation.country === 'Mali' ? 'ML' : 'BF',
+          country: mappedLocation.country === 'Sénégal' ? 'SN' : mappedLocation.country === 'Mali' ? 'ML' : mappedLocation.country === 'Burkina Faso' ? 'BF' : mappedLocation.country === "Côte d'Ivoire" ? 'CI' : 'SN',
           region: mappedLocation.region,
           city: mappedLocation.city,
           coordinates: { latitude, longitude }
@@ -188,9 +188,12 @@ export default function PostScreen() {
       'SN': 'Sénégal',
       'ML': 'Mali',
       'BF': 'Burkina Faso',
+      'CI': "Côte d'Ivoire",
       'Senegal': 'Sénégal',
       'Mali': 'Mali',
-      'Burkina Faso': 'Burkina Faso'
+      'Burkina Faso': 'Burkina Faso',
+      "Cote d'Ivoire": "Côte d'Ivoire",
+      "Ivory Coast": "Côte d'Ivoire"
     };
 
     return {

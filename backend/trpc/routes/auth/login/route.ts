@@ -135,6 +135,40 @@ const mockUsers = [
       registrationNumber: 'DIST456789',
       description: 'Distribution de produits agricoles'
     }
+  },
+  {
+    id: '5',
+    name: 'Koffi Kouassi',
+    email: 'koffi@example.com',
+    phone: '+225 07 08 09 10 11',
+    password: 'password123',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
+    role: 'farmer' as const,
+    location: {
+      city: 'Abidjan',
+      coordinates: {
+        latitude: 5.3602,
+        longitude: -4.0083
+      }
+    },
+    verified: true,
+    rating: 4.6,
+    totalRatings: 30,
+    totalSales: 25,
+    totalPurchases: 5,
+    joinedAt: '2024-03-12T10:00:00Z',
+    listings: ['6'],
+    reviews: [],
+    bio: 'Producteur de cacao et de café à Abidjan',
+    languages: ['Français'],
+    socialMedia: {
+      whatsapp: '+2250708091011'
+    },
+    businessInfo: {
+      companyName: 'Plantation Kouassi',
+      registrationNumber: 'CI987654321',
+      description: 'Production de cacao et café'
+    }
   }
 ];
 

@@ -124,6 +124,32 @@ export const countries = [
         coordinates: { latitude: 11.1781, longitude: -4.2970 }
       }
     ]
+  },
+  {
+    code: 'CI',
+    name: "Côte d'Ivoire",
+    regions: [
+      {
+        name: 'Abidjan',
+        cities: ['Abidjan', 'Cocody', 'Yopougon', 'Treichville'],
+        coordinates: { latitude: 5.3602, longitude: -4.0083 }
+      },
+      {
+        name: 'Bas-Sassandra',
+        cities: ['San-Pédro', 'Sassandra', 'Soubré'],
+        coordinates: { latitude: 4.7500, longitude: -6.6333 }
+      },
+      {
+        name: 'Comoé',
+        cities: ['Abengourou', 'Agnibilékrou'],
+        coordinates: { latitude: 6.7333, longitude: -3.4833 }
+      },
+      {
+        name: 'Denguélé',
+        cities: ['Odienné'],
+        coordinates: { latitude: 9.5000, longitude: -7.5667 }
+      }
+    ]
   }
 ];
 

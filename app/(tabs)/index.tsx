@@ -25,7 +25,7 @@ export default function HomeScreen() {
 
   const { data: products, isLoading, refetch } = trpc.products.list.useQuery({
     limit: 6,
-    country: userLocation.country === 'Sénégal' ? 'SN' : userLocation.country === 'Mali' ? 'ML' : 'BF',
+    country: userLocation.country === 'Sénégal' ? 'SN' : userLocation.country === 'Mali' ? 'ML' : userLocation.country === 'Burkina Faso' ? 'BF' : userLocation.country === "Côte d'Ivoire" ? 'CI' : 'SN',
     region: userLocation.region,
     city: userLocation.city
   });
@@ -138,9 +138,12 @@ export default function HomeScreen() {
       'SN': 'Sénégal',
       'ML': 'Mali',
       'BF': 'Burkina Faso',
+      'CI': "Côte d'Ivoire",
       'Senegal': 'Sénégal',
       'Mali': 'Mali',
-      'Burkina Faso': 'Burkina Faso'
+      'Burkina Faso': 'Burkina Faso',
+      "Cote d'Ivoire": "Côte d'Ivoire",
+      "Ivory Coast": "Côte d'Ivoire"
     };
 
     return {
