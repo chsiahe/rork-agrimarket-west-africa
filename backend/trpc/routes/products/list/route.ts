@@ -16,7 +16,7 @@ const mockProducts: Product[] = [
     condition: 'fresh',
     images: ['https://images.unsplash.com/photo-1546470427-e5ac89c8ba3a?w=400&h=300&fit=crop'],
     location: {
-      country: 'Sénégal',
+      country: 'SN',
       region: 'Dakar',
       city: 'Dakar',
       coordinates: {
@@ -65,7 +65,7 @@ const mockProducts: Product[] = [
     condition: 'fresh',
     images: ['https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&h=300&fit=crop'],
     location: {
-      country: 'Sénégal',
+      country: 'SN',
       region: 'Ziguinchor',
       city: 'Ziguinchor',
       coordinates: {

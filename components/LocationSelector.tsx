@@ -74,9 +74,11 @@ export function LocationSelector({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {label} {required && <Text style={styles.required}>*</Text>}
-      </Text>
+      {label && (
+        <Text style={styles.label}>
+          {label} {required && <Text style={styles.required}>*</Text>}
+        </Text>
+      )}
       
       <View style={styles.row}>
         <View style={[styles.inputGroup, { flex: 1 }]}>

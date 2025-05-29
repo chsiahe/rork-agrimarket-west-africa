@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { Camera, X, Truck } from 'lucide-react-native';
+import { Camera, X, Truck, MapPin, Navigation } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
 import { ProductCondition, DeliveryMode } from '@/types/product';
@@ -37,7 +38,8 @@ export default function PostScreen() {
   const [location, setLocation] = useState({
     country: 'SN',
     region: '',
-    city: ''
+    city: '',
+    coordinates: undefined as { latitude: number; longitude: number } | undefined
   });
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState<ProductCondition>('fresh');
@@ -48,6 +50,7 @@ export default function PostScreen() {
   const [freeDelivery, setFreeDelivery] = useState(true);
   const [deliveryFees, setDeliveryFees] = useState('');
   const [allowCalls, setAllowCalls] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const createProductMutation = trpc.products.create.useMutation({
     onSuccess: (newProduct) => {
@@ -74,6 +77,140 @@ export default function PostScreen() {
     }
   });
 
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    if (Platform.OS === 'web') {
+      // Web geolocation fallback
+      if (navigator.geolocation) {
+        setIsLoadingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            await reverseGeocode(latitude, longitude);
+            setIsLoadingLocation(false);
+          },
+          (error) => {
+            console.log('Web geolocation error:', error);
+            setIsLoadingLocation(false);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+      }
+      return;
+    }
+
+    try {
+      setIsLoadingLocation(true);
+      
+      // Request location permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      // Get current position
+      const locationResult = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 10000,
+        distanceInterval: 100,
+      });
+
+      const { latitude, longitude } = locationResult.coords;
+      await reverseGeocode(latitude, longitude);
+      
+    } catch (error) {
+      console.log('Location error:', error);
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  const reverseGeocode = async (latitude: number, longitude: number) => {
+    try {
+      if (Platform.OS === 'web') {
+        // For web, we'll use a simple mapping based on coordinates
+        const locationData = getLocationFromCoordinates(latitude, longitude);
+        setLocation({
+          country: locationData.country === 'Sénégal' ? 'SN' : 'ML',
+          region: locationData.region,
+          city: locationData.city,
+          coordinates: { latitude, longitude }
+        });
+        return;
+      }
+
+      const reverseGeocodedAddress = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      if (reverseGeocodedAddress.length > 0) {
+        const address = reverseGeocodedAddress[0];
+        
+        // Map to West African locations
+        const mappedLocation = mapToWestAfricanLocation(address);
+        
+        setLocation({
+          country: mappedLocation.country === 'Sénégal' ? 'SN' : 'ML',
+          region: mappedLocation.region,
+          city: mappedLocation.city,
+          coordinates: { latitude, longitude }
+        });
+      }
+    } catch (error) {
+      console.log('Reverse geocoding error:', error);
+    }
+  };
+
+  const getLocationFromCoordinates = (lat: number, lng: number) => {
+    // Simple coordinate-based mapping for West African countries
+    // Senegal bounds: approximately 12.3°N to 16.7°N, 17.5°W to 11.4°W
+    if (lat >= 12.3 && lat <= 16.7 && lng >= -17.5 && lng <= -11.4) {
+      if (lat >= 14.6 && lat <= 14.8 && lng >= -17.5 && lng <= -17.3) {
+        return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
+      } else if (lat >= 12.5 && lat <= 12.7 && lng >= -16.3 && lng <= -16.1) {
+        return { city: 'Ziguinchor', region: 'Ziguinchor', country: 'Sénégal' };
+      } else if (lat >= 14.7 && lat <= 14.9 && lng >= -17.1 && lng <= -16.9) {
+        return { city: 'Thiès', region: 'Thiès', country: 'Sénégal' };
+      }
+      return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
+    }
+    
+    // Mali bounds: approximately 10.2°N to 25.0°N, 12.2°W to 4.3°E
+    if (lat >= 10.2 && lat <= 25.0 && lng >= -12.2 && lng <= 4.3) {
+      return { city: 'Bamako', region: 'Bamako', country: 'Mali' };
+    }
+    
+    // Default to Dakar if location is not recognized
+    return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
+  };
+
+  const mapToWestAfricanLocation = (address: any) => {
+    const country = address.country || address.isoCountryCode;
+    const region = address.region || address.subregion || address.city;
+    const city = address.city || address.district || address.subregion;
+
+    // Map country codes to full names
+    const countryMapping: Record<string, string> = {
+      'SN': 'Sénégal',
+      'ML': 'Mali',
+      'BF': 'Burkina Faso',
+      'Senegal': 'Sénégal',
+      'Mali': 'Mali',
+      'Burkina Faso': 'Burkina Faso'
+    };
+
+    return {
+      country: countryMapping[country] || 'Sénégal',
+      region: region || 'Dakar',
+      city: city || 'Dakar'
+    };
+  };
+
   const resetForm = () => {
     setImages([]);
     setTitle('');
@@ -82,7 +219,7 @@ export default function PostScreen() {
     setDescription('');
     setQuantity('');
     setUnit('kg');
-    setLocation({ country: 'SN', region: '', city: '' });
+    setLocation({ country: 'SN', region: '', city: '', coordinates: undefined });
     setCategory('');
     setCondition('fresh');
     setStartDate('');
@@ -169,7 +306,12 @@ export default function PostScreen() {
       negotiable,
       quantity: parseFloat(quantity),
       unit,
-      location,
+      location: {
+        country: location.country,
+        region: location.region,
+        city: location.city,
+        coordinates: location.coordinates
+      },
       category,
       description,
       condition,
@@ -206,6 +348,15 @@ export default function PostScreen() {
       return start;
     }
     return new Date();
+  };
+
+  const handleLocationChange = (newLocation: { country: string; region: string; city: string }) => {
+    setLocation(prev => ({
+      ...prev,
+      country: newLocation.country,
+      region: newLocation.region,
+      city: newLocation.city
+    }));
   };
 
   return (
@@ -332,14 +483,37 @@ export default function PostScreen() {
         </View>
 
         <View style={styles.section}>
+          <View style={styles.locationHeader}>
+            <Text style={styles.sectionTitle}>Localisation du produit</Text>
+            <TouchableOpacity 
+              style={styles.gpsButton}
+              onPress={getCurrentLocation}
+              disabled={isLoadingLocation}
+            >
+              {isLoadingLocation ? (
+                <Navigation size={16} color={colors.white} />
+              ) : (
+                <MapPin size={16} color={colors.white} />
+              )}
+              <Text style={styles.gpsButtonText}>
+                {isLoadingLocation ? 'Localisation...' : 'GPS'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
           <LocationSelector
             country={location.country}
             region={location.region}
             city={location.city}
-            onLocationChange={setLocation}
-            label="Localisation du produit"
+            onLocationChange={handleLocationChange}
             required
           />
+          
+          {location.coordinates && (
+            <Text style={styles.coordinatesText}>
+              📍 Position GPS: {location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}
+            </Text>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -537,6 +711,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  gpsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  gpsButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  coordinatesText: {
+    fontSize: 12,
+    color: colors.textLight,
+    fontStyle: 'italic',
+    marginTop: 8,
   },
   row: {
     flexDirection: 'row',
