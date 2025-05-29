@@ -74,15 +74,7 @@ export type CreateProductRequest = {
   category: string;
   condition: ProductCondition;
   images: string[];
-  location: {
-    country: string;
-    region: string;
-    city: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
-  };
+  location: ProductLocation;
   availability: ProductAvailability;
   delivery: ProductDelivery;
   allowCalls: boolean;

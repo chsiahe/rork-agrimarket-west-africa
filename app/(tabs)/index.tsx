@@ -9,6 +9,59 @@ import { router } from 'expo-router';
 import { Product } from '@/types/product';
 import * as Location from 'expo-location';
 
+// West African countries GPS coordinates mapping
+const WEST_AFRICAN_LOCATIONS = {
+  // Senegal
+  'SN': {
+    'Dakar': {
+      'Dakar': { lat: 14.6928, lng: -17.4467 },
+      'Pikine': { lat: 14.7549, lng: -17.3983 },
+      'Guédiawaye': { lat: 14.7692, lng: -17.4056 },
+      'Rufisque': { lat: 14.7167, lng: -17.2667 },
+      'Bargny': { lat: 14.6833, lng: -17.2000 }
+    },
+    'Thiès': {
+      'Thiès': { lat: 14.7886, lng: -16.9246 },
+      'Mbour': { lat: 14.4167, lng: -16.9667 },
+      'Tivaouane': { lat: 14.9500, lng: -16.8167 },
+      'Joal-Fadiouth': { lat: 14.1667, lng: -16.8333 },
+      'Popenguine': { lat: 14.3500, lng: -17.1167 }
+    },
+    'Saint-Louis': {
+      'Saint-Louis': { lat: 16.0167, lng: -16.5000 },
+      'Dagana': { lat: 16.5167, lng: -15.5000 },
+      'Podor': { lat: 16.6500, lng: -14.9667 },
+      'Richard-Toll': { lat: 16.4667, lng: -15.7000 }
+    },
+    'Ziguinchor': {
+      'Ziguinchor': { lat: 12.5681, lng: -16.2719 },
+      'Oussouye': { lat: 12.4833, lng: -16.5500 },
+      'Bignona': { lat: 12.8167, lng: -16.2333 }
+    }
+  },
+  // Mali
+  'ML': {
+    'Bamako': {
+      'Bamako': { lat: 12.6392, lng: -8.0029 }
+    },
+    'Kayes': {
+      'Kayes': { lat: 14.4500, lng: -11.4333 },
+      'Kita': { lat: 13.0333, lng: -9.4833 },
+      'Bafoulabé': { lat: 13.8167, lng: -10.8333 }
+    }
+  },
+  // Burkina Faso
+  'BF': {
+    'Centre': {
+      'Ouagadougou': { lat: 12.3714, lng: -1.5197 }
+    },
+    'Hauts-Bassins': {
+      'Bobo-Dioulasso': { lat: 11.1781, lng: -4.2970 },
+      'Banfora': { lat: 10.6333, lng: -4.7500 }
+    }
+  }
+};
+
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{
     city: string;
@@ -24,7 +77,7 @@ export default function HomeScreen() {
 
   const { data: products, isLoading, refetch } = trpc.products.list.useQuery({
     limit: 6,
-    country: userLocation.country === 'Sénégal' ? 'SN' : undefined,
+    country: userLocation.country === 'Sénégal' ? 'SN' : userLocation.country === 'Mali' ? 'ML' : 'BF',
     region: userLocation.region,
     city: userLocation.city
   });
@@ -64,7 +117,7 @@ export default function HomeScreen() {
           'Permission refusée',
           'L\'accès à la localisation est nécessaire pour afficher les produits près de vous.',
           [
-            { text: 'Annuler', style: 'cancel' },
+            { text: 'Continuer sans GPS', style: 'cancel' },
             { text: 'Paramètres', onPress: () => Location.requestForegroundPermissionsAsync() }
           ]
         );
@@ -93,8 +146,7 @@ export default function HomeScreen() {
   const reverseGeocode = async (latitude: number, longitude: number) => {
     try {
       if (Platform.OS === 'web') {
-        // For web, we'll use a simple mapping based on coordinates
-        // This is a simplified approach for West African countries
+        // For web, use coordinate-based mapping
         const location = getLocationFromCoordinates(latitude, longitude);
         setUserLocation({
           ...location,
@@ -125,31 +177,30 @@ export default function HomeScreen() {
   };
 
   const getLocationFromCoordinates = (lat: number, lng: number) => {
-    // Simple coordinate-based mapping for West African countries
-    // Senegal bounds: approximately 12.3°N to 16.7°N, 17.5°W to 11.4°W
-    if (lat >= 12.3 && lat <= 16.7 && lng >= -17.5 && lng <= -11.4) {
-      if (lat >= 14.6 && lat <= 14.8 && lng >= -17.5 && lng <= -17.3) {
-        return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
-      } else if (lat >= 12.5 && lat <= 12.7 && lng >= -16.3 && lng <= -16.1) {
-        return { city: 'Ziguinchor', region: 'Ziguinchor', country: 'Sénégal' };
-      } else if (lat >= 14.7 && lat <= 14.9 && lng >= -17.1 && lng <= -16.9) {
-        return { city: 'Thiès', region: 'Thiès', country: 'Sénégal' };
-      }
-      return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
-    }
+    // Find the closest city based on coordinates
+    let closestCity = { city: 'Dakar', region: 'Dakar', country: 'Sénégal', distance: Infinity };
     
-    // Mali bounds: approximately 10.2°N to 25.0°N, 12.2°W to 4.3°E
-    if (lat >= 10.2 && lat <= 25.0 && lng >= -12.2 && lng <= 4.3) {
-      return { city: 'Bamako', region: 'Bamako', country: 'Mali' };
-    }
+    Object.entries(WEST_AFRICAN_LOCATIONS).forEach(([countryCode, regions]) => {
+      Object.entries(regions).forEach(([regionName, cities]) => {
+        Object.entries(cities).forEach(([cityName, coords]) => {
+          const distance = Math.sqrt(
+            Math.pow(lat - coords.lat, 2) + Math.pow(lng - coords.lng, 2)
+          );
+          
+          if (distance < closestCity.distance) {
+            const countryName = countryCode === 'SN' ? 'Sénégal' : countryCode === 'ML' ? 'Mali' : 'Burkina Faso';
+            closestCity = {
+              city: cityName,
+              region: regionName,
+              country: countryName,
+              distance
+            };
+          }
+        });
+      });
+    });
     
-    // Burkina Faso bounds: approximately 9.4°N to 15.1°N, 5.5°W to 2.4°E
-    if (lat >= 9.4 && lat <= 15.1 && lng >= -5.5 && lng <= 2.4) {
-      return { city: 'Ouagadougou', region: 'Centre', country: 'Burkina Faso' };
-    }
-    
-    // Default to Dakar if location is not recognized
-    return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
+    return closestCity;
   };
 
   const mapToWestAfricanLocation = (address: any) => {
@@ -339,6 +390,14 @@ export default function HomeScreen() {
           </Text>
         </View>
       </View>
+
+      {userLocation.coordinates && (
+        <View style={styles.gpsInfo}>
+          <Text style={styles.gpsText}>
+            📍 Position GPS: {userLocation.coordinates.latitude.toFixed(4)}, {userLocation.coordinates.longitude.toFixed(4)}
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -570,5 +629,15 @@ const styles = StyleSheet.create({
   trendingText: {
     color: colors.text,
     fontSize: 14,
+  },
+  gpsInfo: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  gpsText: {
+    fontSize: 12,
+    color: colors.textLight,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });

@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
-import { ProductCondition, DeliveryMode } from '@/types/product';
+import { ProductCondition, DeliveryMode, ProductLocation } from '@/types/product';
 import { categories } from '@/constants/categories';
 import { units, convertUnit } from '@/constants/units';
 import { Dropdown } from '@/components/Dropdown';
@@ -27,6 +27,59 @@ const deliveryOptions: { value: DeliveryMode; label: string }[] = [
   { value: 'pickup', label: 'Retrait sur place' },
 ];
 
+// West African countries GPS coordinates mapping
+const WEST_AFRICAN_LOCATIONS = {
+  // Senegal
+  'SN': {
+    'Dakar': {
+      'Dakar': { lat: 14.6928, lng: -17.4467 },
+      'Pikine': { lat: 14.7549, lng: -17.3983 },
+      'Guédiawaye': { lat: 14.7692, lng: -17.4056 },
+      'Rufisque': { lat: 14.7167, lng: -17.2667 },
+      'Bargny': { lat: 14.6833, lng: -17.2000 }
+    },
+    'Thiès': {
+      'Thiès': { lat: 14.7886, lng: -16.9246 },
+      'Mbour': { lat: 14.4167, lng: -16.9667 },
+      'Tivaouane': { lat: 14.9500, lng: -16.8167 },
+      'Joal-Fadiouth': { lat: 14.1667, lng: -16.8333 },
+      'Popenguine': { lat: 14.3500, lng: -17.1167 }
+    },
+    'Saint-Louis': {
+      'Saint-Louis': { lat: 16.0167, lng: -16.5000 },
+      'Dagana': { lat: 16.5167, lng: -15.5000 },
+      'Podor': { lat: 16.6500, lng: -14.9667 },
+      'Richard-Toll': { lat: 16.4667, lng: -15.7000 }
+    },
+    'Ziguinchor': {
+      'Ziguinchor': { lat: 12.5681, lng: -16.2719 },
+      'Oussouye': { lat: 12.4833, lng: -16.5500 },
+      'Bignona': { lat: 12.8167, lng: -16.2333 }
+    }
+  },
+  // Mali
+  'ML': {
+    'Bamako': {
+      'Bamako': { lat: 12.6392, lng: -8.0029 }
+    },
+    'Kayes': {
+      'Kayes': { lat: 14.4500, lng: -11.4333 },
+      'Kita': { lat: 13.0333, lng: -9.4833 },
+      'Bafoulabé': { lat: 13.8167, lng: -10.8333 }
+    }
+  },
+  // Burkina Faso
+  'BF': {
+    'Centre': {
+      'Ouagadougou': { lat: 12.3714, lng: -1.5197 }
+    },
+    'Hauts-Bassins': {
+      'Bobo-Dioulasso': { lat: 11.1781, lng: -4.2970 },
+      'Banfora': { lat: 10.6333, lng: -4.7500 }
+    }
+  }
+};
+
 export default function PostScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
@@ -35,11 +88,11 @@ export default function PostScreen() {
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('kg');
-  const [location, setLocation] = useState({
+  const [location, setLocation] = useState<ProductLocation>({
     country: 'SN',
     region: '',
     city: '',
-    coordinates: undefined as { latitude: number; longitude: number } | undefined
+    coordinates: undefined
   });
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState<ProductCondition>('fresh');
@@ -109,6 +162,14 @@ export default function PostScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setIsLoadingLocation(false);
+        Alert.alert(
+          'Permission refusée',
+          'L\'accès à la localisation est nécessaire pour géolocaliser votre produit.',
+          [
+            { text: 'Continuer sans GPS', style: 'cancel' },
+            { text: 'Paramètres', onPress: () => Location.requestForegroundPermissionsAsync() }
+          ]
+        );
         return;
       }
 
@@ -124,6 +185,7 @@ export default function PostScreen() {
       
     } catch (error) {
       console.log('Location error:', error);
+      Alert.alert('Erreur', 'Impossible d\'obtenir votre localisation');
     } finally {
       setIsLoadingLocation(false);
     }
@@ -132,10 +194,10 @@ export default function PostScreen() {
   const reverseGeocode = async (latitude: number, longitude: number) => {
     try {
       if (Platform.OS === 'web') {
-        // For web, we'll use a simple mapping based on coordinates
+        // For web, use coordinate-based mapping
         const locationData = getLocationFromCoordinates(latitude, longitude);
         setLocation({
-          country: locationData.country === 'Sénégal' ? 'SN' : 'ML',
+          country: locationData.country === 'Sénégal' ? 'SN' : locationData.country === 'Mali' ? 'ML' : 'BF',
           region: locationData.region,
           city: locationData.city,
           coordinates: { latitude, longitude }
@@ -155,7 +217,7 @@ export default function PostScreen() {
         const mappedLocation = mapToWestAfricanLocation(address);
         
         setLocation({
-          country: mappedLocation.country === 'Sénégal' ? 'SN' : 'ML',
+          country: mappedLocation.country === 'Sénégal' ? 'SN' : mappedLocation.country === 'Mali' ? 'ML' : 'BF',
           region: mappedLocation.region,
           city: mappedLocation.city,
           coordinates: { latitude, longitude }
@@ -167,26 +229,30 @@ export default function PostScreen() {
   };
 
   const getLocationFromCoordinates = (lat: number, lng: number) => {
-    // Simple coordinate-based mapping for West African countries
-    // Senegal bounds: approximately 12.3°N to 16.7°N, 17.5°W to 11.4°W
-    if (lat >= 12.3 && lat <= 16.7 && lng >= -17.5 && lng <= -11.4) {
-      if (lat >= 14.6 && lat <= 14.8 && lng >= -17.5 && lng <= -17.3) {
-        return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
-      } else if (lat >= 12.5 && lat <= 12.7 && lng >= -16.3 && lng <= -16.1) {
-        return { city: 'Ziguinchor', region: 'Ziguinchor', country: 'Sénégal' };
-      } else if (lat >= 14.7 && lat <= 14.9 && lng >= -17.1 && lng <= -16.9) {
-        return { city: 'Thiès', region: 'Thiès', country: 'Sénégal' };
-      }
-      return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
-    }
+    // Find the closest city based on coordinates
+    let closestCity = { city: 'Dakar', region: 'Dakar', country: 'Sénégal', distance: Infinity };
     
-    // Mali bounds: approximately 10.2°N to 25.0°N, 12.2°W to 4.3°E
-    if (lat >= 10.2 && lat <= 25.0 && lng >= -12.2 && lng <= 4.3) {
-      return { city: 'Bamako', region: 'Bamako', country: 'Mali' };
-    }
+    Object.entries(WEST_AFRICAN_LOCATIONS).forEach(([countryCode, regions]) => {
+      Object.entries(regions).forEach(([regionName, cities]) => {
+        Object.entries(cities).forEach(([cityName, coords]) => {
+          const distance = Math.sqrt(
+            Math.pow(lat - coords.lat, 2) + Math.pow(lng - coords.lng, 2)
+          );
+          
+          if (distance < closestCity.distance) {
+            const countryName = countryCode === 'SN' ? 'Sénégal' : countryCode === 'ML' ? 'Mali' : 'Burkina Faso';
+            closestCity = {
+              city: cityName,
+              region: regionName,
+              country: countryName,
+              distance
+            };
+          }
+        });
+      });
+    });
     
-    // Default to Dakar if location is not recognized
-    return { city: 'Dakar', region: 'Dakar', country: 'Sénégal' };
+    return closestCity;
   };
 
   const mapToWestAfricanLocation = (address: any) => {
@@ -306,12 +372,7 @@ export default function PostScreen() {
       negotiable,
       quantity: parseFloat(quantity),
       unit,
-      location: {
-        country: location.country,
-        region: location.region,
-        city: location.city,
-        coordinates: location.coordinates
-      },
+      location,
       category,
       description,
       condition,
@@ -351,12 +412,16 @@ export default function PostScreen() {
   };
 
   const handleLocationChange = (newLocation: { country: string; region: string; city: string }) => {
-    setLocation(prev => ({
-      ...prev,
+    // Get coordinates for the selected city if available
+    const countryCode = newLocation.country === 'Sénégal' ? 'SN' : newLocation.country === 'Mali' ? 'ML' : 'BF';
+    const coordinates = WEST_AFRICAN_LOCATIONS[countryCode as keyof typeof WEST_AFRICAN_LOCATIONS]?.[newLocation.region]?.[newLocation.city];
+    
+    setLocation({
       country: newLocation.country,
       region: newLocation.region,
-      city: newLocation.city
-    }));
+      city: newLocation.city,
+      coordinates: coordinates ? { latitude: coordinates.lat, longitude: coordinates.lng } : undefined
+    });
   };
 
   return (

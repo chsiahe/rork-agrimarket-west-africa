@@ -11,6 +11,10 @@ export default publicProcedure
     country: z.string().min(2, "Pays requis"),
     region: z.string().min(2, "Région requise"),
     city: z.string().min(2, "Ville requise"),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    }).optional(),
     role: z.enum(['farmer', 'buyer', 'cooperative', 'distributor']),
     operatingAreas: z.object({
       regions: z.array(z.string()),
@@ -19,11 +23,66 @@ export default publicProcedure
     }).optional(),
   }))
   .mutation(async ({ input, ctx }) => {
-    // In a real application, you would:
-    // 1. Hash the password
-    // 2. Check if email already exists
-    // 3. Save user to database
-    // 4. Generate JWT token
+    // In a real application with Supabase, you would:
+    /*
+    if (ctx.supabase) {
+      // 1. Create user in Supabase Auth
+      const { data: authData, error: authError } = await ctx.supabase.auth.signUp({
+        email: input.email,
+        password: input.password,
+        options: {
+          data: {
+            name: input.name,
+            phone: input.phone,
+          }
+        }
+      });
+
+      if (authError) {
+        throw new Error(`Erreur lors de la création du compte: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('Erreur lors de la création du compte');
+      }
+
+      // 2. Create user profile in users table
+      const { data: userData, error: userError } = await ctx.supabase
+        .from('users')
+        .insert([{
+          id: authData.user.id,
+          name: input.name,
+          email: input.email,
+          phone: input.phone,
+          role: input.role,
+          location_country: input.country,
+          location_region: input.region,
+          location_city: input.city,
+          location_coordinates: input.coordinates,
+          operating_areas: input.operatingAreas,
+          verified: false,
+          rating: 0,
+          total_ratings: 0,
+          total_sales: 0,
+          total_purchases: 0,
+          joined_at: new Date().toISOString(),
+          listings: [],
+          reviews: [],
+        }])
+        .select()
+        .single();
+
+      if (userError) {
+        throw new Error(`Erreur lors de la création du profil: ${userError.message}`);
+      }
+
+      return {
+        user: userData,
+        token: authData.session?.access_token,
+        message: "Compte créé avec succès"
+      };
+    }
+    */
     
     // For now, create a mock user
     const newUser: User = {
@@ -37,10 +96,7 @@ export default publicProcedure
         country: input.country,
         region: input.region,
         city: input.city,
-        coordinates: {
-          latitude: 14.6928, // Default to Dakar coordinates
-          longitude: -17.4467
-        }
+        coordinates: input.coordinates
       },
       operatingAreas: input.operatingAreas,
       verified: false,

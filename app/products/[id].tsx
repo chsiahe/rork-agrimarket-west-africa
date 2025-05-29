@@ -227,6 +227,15 @@ export default function ProductDetailScreen() {
                 </Text>
               </View>
             )}
+
+            {product.location.coordinates && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Position GPS:</Text>
+                <Text style={styles.detailValue}>
+                  {product.location.coordinates.latitude.toFixed(4)}, {product.location.coordinates.longitude.toFixed(4)}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Description */}
