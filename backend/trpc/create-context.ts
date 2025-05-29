@@ -6,15 +6,15 @@ import { User, UserRole } from '@/types/user';
 
 // Supabase configuration using environment variables
 const SUPABASE_CONFIG = {
-  url: process.env.SUPABASE_URL || 'https://your-project-ref.supabase.co',
-  anonKey: process.env.SUPABASE_ANON_KEY || 'your-anon-key',
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key',
+  url: process.env.SUPABASE_URL || 'https://fcarcjlgyymauxhzamri.supabase.co',
+  anonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXJjamxneXltYXV4aHphbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0ODA5MDAsImV4cCI6MjA2NDA1NjkwMH0.-PyVNk0rGtg2vZdI2Hmui7wLd3twB5mLKz9si4ESjw8',
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjYXJjamxneXltYXV4aHphbXJpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODQ4MDkwMCwiZXhwIjoyMDY0MDU2OTAwfQ.JAK7Q3m0gFWL0tqy16wnAJkhjk_JYUms_GS-aL0hvh0',
 };
 
 // JWT configuration
 const JWT_CONFIG = {
-  secret: process.env.JWT_SECRET || 'your-secret-key',
-  expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  secret: process.env.JWT_SECRET || 'a5scdS0p1cHr3yXELbbTjmEb9ffifqukxevuOjlZV7zzjIiUoUmU8FYQChjRSqrxkW1nbatQukuoso9ok6fIXg==',
+  expiresIn: process.env.JWT_EXPIRES_IN || '3600s',
 };
 
 // Mock user data for context (in real app, decode JWT token and fetch from Supabase)
