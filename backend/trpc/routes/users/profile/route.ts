@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure } from "@/backend/trpc/create-context";
+import { publicProcedure } from "../create-context";
 
 const mockUsers = {
   '1': {
@@ -10,6 +10,8 @@ const mockUsers = {
     email: 'amadou.diallo@example.com',
     role: 'farmer',
     location: {
+      country: 'Sénégal',
+      region: 'Dakar',
       city: 'Dakar',
       coordinates: {
         latitude: 14.6928,
@@ -34,6 +36,11 @@ const mockUsers = {
       companyName: 'Ferme Diallo',
       registrationNumber: 'SN123456789',
       description: 'Production de légumes biologiques'
+    },
+    stats: {
+      totalListings: 3,
+      totalSales: 48,
+      rating: 4.8
     }
   },
   '2': {
@@ -44,6 +51,8 @@ const mockUsers = {
     email: 'fatou.sow@example.com',
     role: 'buyer',
     location: {
+      country: 'Sénégal',
+      region: 'Thiès',
       city: 'Thiès',
       coordinates: {
         latitude: 14.7886,
@@ -61,7 +70,12 @@ const mockUsers = {
     bio: 'Acheteuse de produits frais pour restaurants',
     languages: ['Français'],
     socialMedia: {},
-    businessInfo: undefined
+    businessInfo: undefined,
+    stats: {
+      totalListings: 0,
+      totalSales: 0,
+      rating: 4.5
+    }
   }
 };
 

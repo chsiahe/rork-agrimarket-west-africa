@@ -1,7 +1,7 @@
-import { protectedProcedure } from "../../create-context";
+import { protectedProcedure } from "../create-context";
 import { z } from 'zod';
 import { MarketTrendSubmission } from "@/types/marketTrend";
-import { Context } from "../../create-context";
+import { Context } from "../create-context";
 
 export const submitMarketPrice = protectedProcedure
   .input(
