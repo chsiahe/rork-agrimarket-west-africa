@@ -78,6 +78,10 @@ export type CreateProductRequest = {
     country: string;
     region: string;
     city: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
   };
   availability: ProductAvailability;
   delivery: ProductDelivery;
