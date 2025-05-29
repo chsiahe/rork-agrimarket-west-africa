@@ -24,7 +24,6 @@ export default publicProcedure
   }))
   .mutation(async ({ input, ctx }) => {
     // In a real application with Supabase, you would:
-    /*
     if (ctx.supabase) {
       // 1. Create user in Supabase Auth
       const { data: authData, error: authError } = await ctx.supabase.auth.signUp({
@@ -82,7 +81,6 @@ export default publicProcedure
         message: "Compte créé avec succès"
       };
     }
-    */
     
     // For now, create a mock user
     const newUser: User = {

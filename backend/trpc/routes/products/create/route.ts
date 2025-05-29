@@ -52,7 +52,7 @@ export default protectedProcedure
         verified: ctx.user.verified,
         rating: ctx.user.rating,
         joinedAt: ctx.user.joinedAt,
-        phone: ctx.user.phone,
+        phone: ctx.user.phone || '',
       },
       statistics: {
         views: 0,
@@ -64,7 +64,6 @@ export default protectedProcedure
     };
 
     // In a real application with Supabase, you would:
-    /*
     if (ctx.supabase) {
       const { data, error } = await ctx.supabase
         .from('products')
@@ -103,7 +102,7 @@ export default protectedProcedure
 
       return data;
     }
-    */
+    
 
     // For now, add to mock store
     addProductToStore(newProduct);

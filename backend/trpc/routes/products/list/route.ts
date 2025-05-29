@@ -168,7 +168,67 @@ export default publicProcedure
     limit: z.number().default(10),
     offset: z.number().default(0),
   }))
-  .query(({ input, ctx }) => {
+  .query(async ({ input, ctx }) => {
+    // In a real application with Supabase, you would:
+    if (ctx.supabase) {
+      let query = ctx.supabase
+        .from('products')
+        .select('*')
+        .limit(input.limit)
+        .range(input.offset, input.offset + input.limit - 1);
+
+      // Apply filters
+      if (input.search) {
+        const searchLower = input.search.toLowerCase();
+        query = query.or(
+          `title.ilike.%${searchLower}%,
+           description.ilike.%${searchLower}%,
+           category.ilike.%${searchLower}%`
+        );
+      }
+
+      if (input.category) {
+        query = query.eq('category', input.category);
+      }
+
+      if (input.country) {
+        query = query.eq('location_country', input.country);
+      }
+
+      if (input.region) {
+        query = query.eq('location_region', input.region);
+      }
+
+      if (input.city) {
+        query = query.eq('location_city', input.city);
+      }
+
+      if (input.condition) {
+        query = query.eq('condition', input.condition);
+      }
+
+      if (input.negotiable !== undefined) {
+        query = query.eq('negotiable', input.negotiable);
+      }
+
+      if (input.userId) {
+        query = query.eq('seller_id', input.userId);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(`Erreur lors de la récupération des produits: ${error.message}`);
+      }
+
+      return {
+        products: data,
+        total: count || data.length,
+        hasMore: input.offset + input.limit < (count || data.length)
+      };
+    }
+    
+    // Fallback to mock data
     let filteredProducts = [...mockProducts];
 
     // Filter by search query

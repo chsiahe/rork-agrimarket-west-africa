@@ -262,7 +262,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 // Admin procedure that requires admin role
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin' as UserRole) {
+  if (ctx.user.role !== 'admin') {
     throw new Error('Accès refusé - Droits administrateur requis');
   }
   return next({

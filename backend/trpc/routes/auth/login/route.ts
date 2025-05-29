@@ -143,7 +143,49 @@ export default publicProcedure
     email: z.string().email(),
     password: z.string().min(6),
   }))
-  .mutation(({ input }) => {
+  .mutation(async ({ input, ctx }) => {
+    // In a real application with Supabase, you would:
+    if (ctx.supabase) {
+      const { data, error } = await ctx.supabase.auth.signInWithPassword({
+        email: input.email,
+        password: input.password,
+      });
+
+      if (error) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Email ou mot de passe incorrect',
+        });
+      }
+
+      if (!data.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Email ou mot de passe incorrect',
+        });
+      }
+
+      // Fetch additional user data from your users table
+      const { data: userData, error: userError } = await ctx.supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (userError) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Utilisateur non trouvé',
+        });
+      }
+
+      return {
+        user: userData,
+        token: data.session?.access_token,
+      };
+    }
+    
+    // Fallback to mock data
     const user = mockUsers.find(u => u.email === input.email);
     
     if (!user || user.password !== input.password) {
