@@ -10,6 +10,7 @@ import { Product } from '@/types/product';
 import * as Location from 'expo-location';
 import { findClosestLocation, LocationData } from '@/constants/locations';
 import { LineChart } from '@/components/LineChart';
+import { MarketTrendAggregate } from '@/types/marketTrend';
 
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{
@@ -331,7 +332,7 @@ export default function HomeScreen() {
             style={styles.trendsCarousel}
           >
             <View style={styles.trendsList}>
-              {marketTrends.map((trend, index) => (
+              {marketTrends.map((trend: MarketTrendAggregate, index: number) => (
                 <View key={`${trend.category}-${trend.city}-${index}`} style={styles.trendItem}>
                   <Text style={styles.trendTitle}>
                     {trend.category} à {trend.city}

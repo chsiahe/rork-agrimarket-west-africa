@@ -1,6 +1,7 @@
 import { protectedProcedure } from "../../create-context";
 import { z } from 'zod';
 import { MarketTrendSubmission } from "@/types/marketTrend";
+import { Context } from "../../create-context";
 
 export const submitMarketPrice = protectedProcedure
   .input(
@@ -13,7 +14,7 @@ export const submitMarketPrice = protectedProcedure
       unit: z.string(),
     })
   )
-  .mutation(async ({ ctx, input }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: { category: string; city: string; region: string; country: string; price: number; unit: string } }) => {
     try {
       if (!ctx.supabase) {
         throw new Error("Database connection not available");

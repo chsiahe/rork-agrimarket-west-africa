@@ -1,6 +1,7 @@
 import { publicProcedure } from "../../create-context";
 import { z } from 'zod';
 import { MarketTrendAggregate } from "@/types/marketTrend";
+import { Context } from "../../create-context";
 
 export const getMarketTrends = publicProcedure
   .input(
@@ -12,7 +13,7 @@ export const getMarketTrends = publicProcedure
       days: z.number().default(30),
     })
   )
-  .query(async ({ ctx, input }) => {
+  .query(async ({ ctx, input }: { ctx: Context; input: { country?: string; region?: string; city?: string; limitCategories: number; days: number } }) => {
     try {
       if (!ctx.supabase) {
         // Mock data fallback
@@ -52,7 +53,7 @@ export const getMarketTrends = publicProcedure
       const aggregatedData: MarketTrendAggregate[] = [];
       const groupedByCategoryCity: Record<string, any[]> = {};
 
-      data.forEach((entry) => {
+      data.forEach((entry: any) => {
         const key = `${entry.category}-${entry.city}`;
         if (!groupedByCategoryCity[key]) {
           groupedByCategoryCity[key] = [];

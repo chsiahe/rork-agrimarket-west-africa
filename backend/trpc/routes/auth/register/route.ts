@@ -88,7 +88,7 @@ export default publicProcedure
       name: input.name,
       email: input.email,
       phone: input.phone,
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop",
+      avatar: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop`,
       role: input.role,
       location: {
         country: input.country,
