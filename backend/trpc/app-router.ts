@@ -13,6 +13,8 @@ import sendMessage from './routes/messages/send/route';
 import getMessages from './routes/messages/get/route';
 import listMessages from './routes/messages/list/route';
 import startChat from './routes/messages/start-chat/route';
+import { submitMarketPrice } from './routes/marketTrends/submit/route';
+import { getMarketTrends } from './routes/marketTrends/get/route';
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -38,6 +40,10 @@ export const appRouter = createTRPCRouter({
     get: getMessages,
     list: listMessages,
     startChat: startChat,
+  }),
+  marketTrends: createTRPCRouter({
+    submit: submitMarketPrice,
+    get: getMarketTrends,
   }),
 });
 

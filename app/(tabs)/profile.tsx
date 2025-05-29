@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, FlatList, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, FlatList, Dimensions, TextInput } from 'react-native';
 import { Image } from 'expo-image';
 import { 
   User, 
@@ -12,18 +12,21 @@ import {
   Mail,
   Edit,
   LogOut,
-  Eye
+  Eye,
+  TrendingUp
 } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
 import { Product } from '@/types/product';
 import { useAuthStore } from '@/stores/auth-store';
+import { categories } from '@/constants/categories';
+import { getAllCities } from '@/constants/locations';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - 48) / 2; // 16px padding on each side + 16px gap
 
-type TabType = 'listings' | 'favorites' | 'settings';
+type TabType = 'listings' | 'favorites' | 'settings' | 'market';
 
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('listings');
@@ -43,6 +46,45 @@ export default function ProfileScreen() {
 
   // Mock favorites data
   const favorites: Product[] = [];
+  
+  // State for market price submission
+  const [category, setCategory] = useState(categories[0].name);
+  const [city, setCity] = useState(user?.location?.city || 'Dakar');
+  const [price, setPrice] = useState('');
+  const [unit, setUnit] = useState('kg');
+  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
+  const submitMutation = trpc.marketTrends.submit.useMutation({
+    onMutate: () => setSubmissionStatus('submitting'),
+    onSuccess: () => {
+      setSubmissionStatus('success');
+      setPrice('');
+      setTimeout(() => setSubmissionStatus('idle'), 3000);
+    },
+    onError: () => {
+      setSubmissionStatus('error');
+      setTimeout(() => setSubmissionStatus('idle'), 3000);
+    }
+  });
+
+  const handleSubmitPrice = () => {
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+      setSubmissionStatus('error');
+      setTimeout(() => setSubmissionStatus('idle'), 3000);
+      return;
+    }
+
+    submitMutation.mutate({
+      category,
+      city,
+      region: user?.location?.region || 'Dakar',
+      country: user?.location?.country || 'Sénégal',
+      price: Number(price),
+      unit
+    });
+  };
+
+  const cities = getAllCities();
 
   const renderProduct = ({ item }: { item: Product }) => (
     <TouchableOpacity 
@@ -190,6 +232,147 @@ export default function ProfileScreen() {
           </View>
         );
       
+      case 'market':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Tendances du marché</Text>
+            <Text style={styles.tabSubtitle}>
+              Contribuez aux données de prix du marché dans votre région
+            </Text>
+            
+            <View style={styles.formContainer}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Produit / Catégorie</Text>
+                <View style={styles.dropdownInput}>
+                  <Text style={styles.dropdownText}>{category}</Text>
+                  <View style={styles.dropdownArrow} />
+                </View>
+                <FlatList
+                  data={categories}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownItem,
+                        item.name === category && styles.dropdownItemSelected
+                      ]}
+                      onPress={() => setCategory(item.name)}
+                    >
+                      <Text style={[
+                        styles.dropdownItemText,
+                        item.name === category && styles.dropdownItemTextSelected
+                      ]}>
+                        {item.icon} {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  style={styles.dropdownList}
+                  showsVerticalScrollIndicator={false}
+                />
+                
+                <Text style={styles.label}>Ville / Marché</Text>
+                <View style={styles.dropdownInput}>
+                  <Text style={styles.dropdownText}>{city}</Text>
+                  <View style={styles.dropdownArrow} />
+                </View>
+                <FlatList
+                  data={cities}
+                  keyExtractor={(item, index) => `${item.city}-${index}`}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownItem,
+                        item.city === city && styles.dropdownItemSelected
+                      ]}
+                      onPress={() => setCity(item.city)}
+                    >
+                      <Text style={[
+                        styles.dropdownItemText,
+                        item.city === city && styles.dropdownItemTextSelected
+                      ]}>
+                        {item.city}, {item.region}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  style={styles.dropdownList}
+                  showsVerticalScrollIndicator={false}
+                />
+                
+                <View style={styles.priceRow}>
+                  <View style={styles.priceInputContainer}>
+                    <Text style={styles.label}>Prix (FCFA)</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={price}
+                      onChangeText={setPrice}
+                      placeholder="Entrez le prix"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.unitInputContainer}>
+                    <Text style={styles.label}>Unité</Text>
+                    <View style={styles.dropdownInputSmall}>
+                      <Text style={styles.dropdownText}>{unit}</Text>
+                      <View style={styles.dropdownArrow} />
+                    </View>
+                    <FlatList
+                      data={['kg', 'tonne', 'sac', 'pièce', 'litre']}
+                      keyExtractor={(item) => item}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[
+                            styles.dropdownItemSmall,
+                            item === unit && styles.dropdownItemSelected
+                          ]}
+                          onPress={() => setUnit(item)}
+                        >
+                          <Text style={[
+                            styles.dropdownItemText,
+                            item === unit && styles.dropdownItemTextSelected
+                          ]}>
+                            {item}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      style={styles.dropdownListSmall}
+                      showsVerticalScrollIndicator={false}
+                    />
+                  </View>
+                </View>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    submissionStatus === 'submitting' && styles.submitButtonDisabled
+                  ]}
+                  onPress={handleSubmitPrice}
+                  disabled={submissionStatus === 'submitting'}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {submissionStatus === 'submitting' ? 'Envoi...' : 'Soumettre le prix'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {submissionStatus === 'success' && (
+                  <Text style={styles.successMessage}>
+                    Prix soumis avec succès. Merci de votre contribution!
+                  </Text>
+                )}
+                {submissionStatus === 'error' && (
+                  <Text style={styles.errorMessage}>
+                    Erreur lors de la soumission. Veuillez vérifier les données et réessayer.
+                  </Text>
+                )}
+              </View>
+              
+              <Text style={styles.infoText}>
+                Vos contributions aident les agriculteurs et acheteurs à comprendre les tendances du marché. 
+                Soumettez uniquement des prix réels observés sur le marché.
+              </Text>
+            </View>
+          </View>
+        );
+      
       default:
         return null;
     }
@@ -282,6 +465,19 @@ export default function ProfileScreen() {
                 activeTab === 'settings' && styles.activeTabText
               ]}>
                 Paramètres
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'market' && styles.activeTab]}
+              onPress={() => setActiveTab('market')}
+            >
+              <TrendingUp size={20} color={activeTab === 'market' ? colors.primary : colors.textLight} />
+              <Text style={[
+                styles.tabText,
+                activeTab === 'market' && styles.activeTabText
+              ]}>
+                Marché
               </Text>
             </TouchableOpacity>
           </View>
@@ -385,6 +581,7 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   tab: {
     flex: 1,
@@ -394,6 +591,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     gap: 8,
+    minWidth: '20%',
   },
   activeTab: {
     borderBottomWidth: 2,
@@ -426,6 +624,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
+  },
+  tabSubtitle: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginBottom: 16,
   },
   addButton: {
     backgroundColor: colors.primary,
@@ -557,5 +760,163 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: colors.error,
+  },
+  formContainer: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  dropdownInput: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dropdownInputSmall: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    flex: 1,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  dropdownArrow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderLeftColor: 'transparent',
+    borderRightWidth: 5,
+    borderRightColor: 'transparent',
+    borderTopWidth: 5,
+    borderTopColor: colors.textLight,
+  },
+  dropdownList: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxHeight: 150,
+    position: 'absolute',
+    width: '100%',
+    zIndex: 10,
+    top: 70,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  dropdownListSmall: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxHeight: 150,
+    position: 'absolute',
+    width: '100%',
+    zIndex: 10,
+    top: 70,
+    right: 0,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  dropdownItem: {
+    padding: 12,
+  },
+  dropdownItemSmall: {
+    padding: 12,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.primary + '22', // Adding transparency
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  dropdownItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-end',
+  },
+  priceInputContainer: {
+    flex: 2,
+  },
+  unitInputContainer: {
+    flex: 1,
+  },
+  textInput: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+  submitButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  successMessage: {
+    color: colors.primary,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  errorMessage: {
+    color: colors.error,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  infoText: {
+    fontSize: 12,
+    color: colors.textLight,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

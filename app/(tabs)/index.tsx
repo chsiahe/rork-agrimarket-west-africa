@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { Product } from '@/types/product';
 import * as Location from 'expo-location';
 import { findClosestLocation, LocationData } from '@/constants/locations';
+import { LineChart } from '@/components/LineChart';
 
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{
@@ -28,6 +29,14 @@ export default function HomeScreen() {
     country: userLocation.country === 'Sénégal' ? 'SN' : userLocation.country === 'Mali' ? 'ML' : userLocation.country === 'Burkina Faso' ? 'BF' : userLocation.country === "Côte d'Ivoire" ? 'CI' : 'SN',
     region: userLocation.region,
     city: userLocation.city
+  });
+  
+  const { data: marketTrends, isLoading: isLoadingTrends, refetch: refetchTrends } = trpc.marketTrends.get.useQuery({
+    country: userLocation.country,
+    region: userLocation.region,
+    city: userLocation.city,
+    limitCategories: 3,
+    days: 30
   });
 
   useEffect(() => {
@@ -173,7 +182,8 @@ export default function HomeScreen() {
 
   const onRefresh = React.useCallback(() => {
     refetch();
-  }, [refetch]);
+    refetchTrends();
+  }, [refetch, refetchTrends]);
 
   return (
     <ScrollView 
@@ -309,14 +319,61 @@ export default function HomeScreen() {
           <TrendingUp size={20} color={colors.primary} />
           <Text style={styles.sectionTitle}>Tendances du marché</Text>
         </View>
-        <View style={styles.trendingCard}>
-          <Text style={styles.trendingText}>
-            {products?.products.length === 0 
-              ? "Aucune donnée de marché disponible pour le moment"
-              : `${products?.products.length} nouvelles annonces dans votre région cette semaine`
-            }
-          </Text>
-        </View>
+        
+        {isLoadingTrends ? (
+          <View style={styles.trendingCard}>
+            <Text style={styles.trendingText}>Chargement des tendances...</Text>
+          </View>
+        ) : marketTrends && marketTrends.length > 0 ? (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.trendsCarousel}
+          >
+            <View style={styles.trendsList}>
+              {marketTrends.map((trend, index) => (
+                <View key={`${trend.category}-${trend.city}-${index}`} style={styles.trendItem}>
+                  <Text style={styles.trendTitle}>
+                    {trend.category} à {trend.city}
+                  </Text>
+                  <Text style={styles.trendPrice}>
+                    {trend.averagePrice} FCFA/{trend.unit}
+                  </Text>
+                  <Text style={styles.trendSubmissions}>
+                    Basé sur {trend.submissions} soumission{trend.submissions > 1 ? 's' : ''}
+                  </Text>
+                  {trend.dataPoints.length > 1 && (
+                    <LineChart data={trend.dataPoints} />
+                  )}
+                  <TouchableOpacity 
+                    style={styles.contributeButton}
+                    onPress={() => {
+                      setActiveTab('market');
+                      router.push('/(tabs)/profile');
+                    }}
+                  >
+                    <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        ) : (
+          <View style={styles.trendingCard}>
+            <Text style={styles.trendingText}>
+              Aucune donnée de marché disponible pour {userLocation.city}
+            </Text>
+            <TouchableOpacity 
+              style={styles.contributeButton}
+              onPress={() => {
+                setActiveTab('market');
+                router.push('/(tabs)/profile');
+              }}
+            >
+              <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {userLocation.coordinates && (
@@ -329,6 +386,12 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+// Assuming this is defined elsewhere in your app
+const setActiveTab = (tab: string) => {
+  // This is a placeholder for navigation or state management to switch tabs
+  console.log(`Switching to ${tab} tab`);
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -553,10 +616,58 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center',
+    gap: 12,
   },
   trendingText: {
     color: colors.text,
     fontSize: 14,
+    textAlign: 'center',
+  },
+  trendsCarousel: {
+    maxHeight: 300,
+  },
+  trendsList: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingRight: 16,
+  },
+  trendItem: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    width: 280,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+  },
+  trendTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  trendPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  trendSubmissions: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginBottom: 8,
+  },
+  contributeButton: {
+    backgroundColor: colors.secondary + '22', // Adding transparency
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  contributeButtonText: {
+    color: colors.secondary,
+    fontSize: 14,
+    fontWeight: '500',
   },
   gpsInfo: {
     paddingHorizontal: 16,
