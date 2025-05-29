@@ -59,7 +59,7 @@ export function addMessage(message: Omit<Message, 'id' | 'timestamp'>): Message 
 }
 
 // Get messages for a specific chat
-export function getMessagesForChat(chatId: string, limit: number = 50, offset: number = 0): { messages: Message[], hasMore: boolean } {
+export function getMessagesForChat(chatId: string, limit = 50, offset = 0): { messages: Message[], hasMore: boolean } {
   const chatMessages = store.messages
     .filter(msg => msg.chatId === chatId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
