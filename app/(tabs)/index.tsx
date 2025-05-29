@@ -8,7 +8,7 @@ import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
 import { Product } from '@/types/product';
 import * as Location from 'expo-location';
-import { findClosestLocation } from '@/constants/locations';
+import { findClosestLocation, LocationData } from '@/constants/locations';
 
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{

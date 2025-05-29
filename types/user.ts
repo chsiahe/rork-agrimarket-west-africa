@@ -1,4 +1,4 @@
-export type UserRole = 'farmer' | 'buyer' | 'cooperative' | 'distributor';
+export type UserRole = 'farmer' | 'buyer' | 'cooperative' | 'distributor' | 'admin';
 
 export type UserRating = {
   rating: number;

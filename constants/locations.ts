@@ -1,3 +1,11 @@
+export type LocationData = {
+  city: string;
+  region: string;
+  country: string;
+  countryCode: string;
+  coordinates: { latitude: number; longitude: number };
+};
+
 export const countries = [
   {
     code: 'SN',
@@ -150,8 +158,8 @@ export const getAllCities = () => {
   );
 };
 
-export const findClosestLocation = (latitude: number, longitude: number) => {
-  let closestLocation = null;
+export const findClosestLocation = (latitude: number, longitude: number): LocationData | null => {
+  let closestLocation: LocationData | null = null;
   let minDistance = Infinity;
 
   countries.forEach(country => {

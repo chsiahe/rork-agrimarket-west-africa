@@ -94,6 +94,31 @@ const mockUsers: Record<string, User> = {
     listings: [],
     reviews: []
   },
+  'admin': { 
+    id: 'admin', 
+    name: 'Admin User', 
+    email: 'admin@agriconnect.com', 
+    role: 'admin',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+    phone: '+221 77 000 00 00',
+    location: {
+      country: 'SN',
+      region: 'Dakar',
+      city: 'Dakar',
+      coordinates: {
+        latitude: 14.6928,
+        longitude: -17.4467
+      }
+    },
+    verified: true,
+    rating: 5.0,
+    totalRatings: 0,
+    totalSales: 0,
+    totalPurchases: 0,
+    joinedAt: '2022-01-01T00:00:00Z',
+    listings: [],
+    reviews: []
+  },
 };
 
 // Supabase client initialization

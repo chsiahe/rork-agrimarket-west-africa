@@ -13,7 +13,7 @@ import { units, convertUnit } from '@/constants/units';
 import { Dropdown } from '@/components/Dropdown';
 import { DatePicker } from '@/components/DatePicker';
 import { LocationSelector } from '@/components/LocationSelector';
-import { findClosestLocation, getRegionCoordinates } from '@/constants/locations';
+import { findClosestLocation, getRegionCoordinates, LocationData } from '@/constants/locations';
 
 const conditionOptions: { value: ProductCondition; label: string }[] = [
   { value: 'new', label: 'Neuf' },
