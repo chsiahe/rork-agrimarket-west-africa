@@ -1,7 +1,7 @@
 import { publicProcedure } from "../../create-context";
 import { z } from 'zod';
 import { MarketTrendAggregate } from "@/types/marketTrend";
-import { Context } from "../../create-context";
+import type { Context } from "../../create-context";
 
 export const getMarketTrends = publicProcedure
   .input(
