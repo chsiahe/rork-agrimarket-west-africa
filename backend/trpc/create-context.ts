@@ -2,7 +2,7 @@ import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { createClient } from '@supabase/supabase-js';
-import { User } from '@/types/user';
+import { User, UserRole } from '@/types/user';
 
 // Supabase configuration using environment variables
 const SUPABASE_CONFIG = {
@@ -262,7 +262,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 // Admin procedure that requires admin role
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
+  if (ctx.user.role !== 'admin' as UserRole) {
     throw new Error('Accès refusé - Droits administrateur requis');
   }
   return next({
