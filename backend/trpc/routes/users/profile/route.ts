@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure } from "../create-context";
+import { publicProcedure } from "../../create-context";
 
 const mockUsers = {
   '1': {
@@ -81,7 +81,7 @@ const mockUsers = {
 
 export default publicProcedure
   .input(z.object({ userId: z.string() }))
-  .query(({ input }) => {
+  .query(({ input }: { input: { userId: string } }) => {
     const user = mockUsers[input.userId as keyof typeof mockUsers];
     
     if (!user) {

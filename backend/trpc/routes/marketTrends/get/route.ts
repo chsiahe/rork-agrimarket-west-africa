@@ -1,7 +1,7 @@
-import { publicProcedure } from "../create-context";
+import { publicProcedure } from "../../create-context";
 import { z } from 'zod';
 import { MarketTrendAggregate } from "@/types/marketTrend";
-import { Context } from "../create-context";
+import { Context } from "../../create-context";
 
 export const getMarketTrends = publicProcedure
   .input(
@@ -100,7 +100,7 @@ function generateDataPoints(entries: any[], days: number) {
   if (days > 7) {
     const dailyAverages: Record<string, { sum: number; count: number }> = {};
     
-    sortedEntries.forEach(entry => {
+    sortedEntries.forEach((entry: any) => {
       const date = entry.createdAt.split('T')[0]; // YYYY-MM-DD
       if (!dailyAverages[date]) {
         dailyAverages[date] = { sum: 0, count: 0 };
@@ -116,7 +116,7 @@ function generateDataPoints(entries: any[], days: number) {
       });
     }
   } else {
-    sortedEntries.forEach(entry => {
+    sortedEntries.forEach((entry: any) => {
       const date = new Date(entry.createdAt).toISOString().split('T')[0];
       dataPoints.push({
         date,
