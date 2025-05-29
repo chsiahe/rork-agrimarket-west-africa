@@ -195,7 +195,7 @@ export default function ProductDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>État:</Text>
                 <Text style={styles.detailValue}>
-                  {conditionLabels[product.condition as ProductCondition] || product.condition}
+                  {conditionLabels[product.condition] || product.condition}
                 </Text>
               </View>
             )}

@@ -102,6 +102,55 @@ const mockProducts: Product[] = [
     },
     harvestDate: '2024-01-08T06:00:00Z',
     allowCalls: true
+  },
+  {
+    id: '3',
+    title: 'Mil rouge traditionnel',
+    description: 'Mil rouge de qualité supérieure, cultivé selon les méthodes traditionnelles. Idéal pour la préparation du couscous.',
+    price: 800,
+    negotiable: true,
+    quantity: 200,
+    unit: 'kg',
+    category: 'Céréales',
+    condition: 'fresh',
+    images: ['https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop'],
+    location: {
+      country: 'ML',
+      region: 'Bamako',
+      city: 'Bamako',
+      coordinates: {
+        latitude: 12.6392,
+        longitude: -8.0029
+      }
+    },
+    availability: {
+      startDate: '2024-01-20T00:00:00Z',
+      endDate: '2024-03-20T00:00:00Z',
+    },
+    delivery: {
+      modes: ['regional', 'pickup'],
+      freeDelivery: true,
+      maxDeliveryDistance: 50
+    },
+    seller: {
+      id: '4',
+      name: 'Fatou Traoré',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=120&h=120&fit=crop',
+      location: 'Bamako, Mali',
+      verified: true,
+      rating: 4.7,
+      joinedAt: '2023-11-15T10:00:00Z',
+      phone: '+223 70 123 456'
+    },
+    createdAt: '2024-01-20T10:00:00Z',
+    updatedAt: '2024-01-20T10:00:00Z',
+    statistics: {
+      views: 32,
+      favorites: 8,
+      inquiries: 5
+    },
+    harvestDate: '2024-01-18T06:00:00Z',
+    allowCalls: true
   }
 ];
 
@@ -119,7 +168,7 @@ export default publicProcedure
     limit: z.number().default(10),
     offset: z.number().default(0),
   }))
-  .query(({ input }) => {
+  .query(({ input, ctx }) => {
     let filteredProducts = [...mockProducts];
 
     // Filter by search query
