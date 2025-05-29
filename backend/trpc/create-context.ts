@@ -2,6 +2,7 @@ import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { createClient } from '@supabase/supabase-js';
+import { User } from '@/types/user';
 
 // Supabase configuration using environment variables
 const SUPABASE_CONFIG = {
@@ -17,12 +18,14 @@ const JWT_CONFIG = {
 };
 
 // Mock user data for context (in real app, decode JWT token and fetch from Supabase)
-const mockUsers = {
+const mockUsers: Record<string, User> = {
   '1': { 
     id: '1', 
     name: 'Jean Dupont', 
     email: 'jean@example.com', 
     role: 'farmer',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+    phone: '+221 77 123 45 67',
     location: {
       country: 'SN',
       region: 'Dakar',
@@ -31,13 +34,23 @@ const mockUsers = {
         latitude: 14.6928,
         longitude: -17.4467
       }
-    }
+    },
+    verified: true,
+    rating: 4.5,
+    totalRatings: 23,
+    totalSales: 45,
+    totalPurchases: 12,
+    joinedAt: '2023-01-15T10:30:00Z',
+    listings: [],
+    reviews: []
   },
   '2': { 
     id: '2', 
     name: 'Marie Martin', 
     email: 'marie@example.com', 
     role: 'buyer',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop',
+    phone: '+221 76 987 65 43',
     location: {
       country: 'SN',
       region: 'Thiès',
@@ -46,13 +59,23 @@ const mockUsers = {
         latitude: 14.7886,
         longitude: -16.9246
       }
-    }
+    },
+    verified: false,
+    rating: 4.2,
+    totalRatings: 8,
+    totalSales: 0,
+    totalPurchases: 15,
+    joinedAt: '2023-03-22T14:15:00Z',
+    listings: [],
+    reviews: []
   },
   '3': { 
     id: '3', 
     name: 'Pierre Diallo', 
     email: 'pierre@example.com', 
     role: 'farmer',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+    phone: '+221 78 456 78 90',
     location: {
       country: 'SN',
       region: 'Ziguinchor',
@@ -61,7 +84,15 @@ const mockUsers = {
         latitude: 12.5681,
         longitude: -16.2719
       }
-    }
+    },
+    verified: true,
+    rating: 4.8,
+    totalRatings: 67,
+    totalSales: 123,
+    totalPurchases: 5,
+    joinedAt: '2022-11-08T09:45:00Z',
+    listings: [],
+    reviews: []
   },
 };
 
@@ -111,7 +142,7 @@ async function connectToSupabase() {
 }
 
 // JWT token verification function (placeholder for real implementation)
-async function verifyJWTToken(token: string, supabase: any) {
+async function verifyJWTToken(token: string, supabase: any): Promise<User | null> {
   // In a real application, you would verify the JWT token here
   // Example with Supabase Auth:
   /*
@@ -140,7 +171,7 @@ async function verifyJWTToken(token: string, supabase: any) {
   */
   
   // For now, return mock user based on token
-  return mockUsers[token as keyof typeof mockUsers] || null;
+  return mockUsers[token] || null;
 }
 
 // Context creation function
@@ -152,7 +183,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
   const authorization = opts.req.headers.get('authorization');
   const token = authorization?.replace('Bearer ', '');
 
-  let user = null;
+  let user: User | null = null;
   
   if (token && supabase) {
     try {
@@ -166,7 +197,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
 
   // If no valid token, use default user for demo purposes
   if (!user && token) {
-    user = mockUsers[token as keyof typeof mockUsers] || mockUsers['1'];
+    user = mockUsers[token] || mockUsers['1'];
   }
 
   return {

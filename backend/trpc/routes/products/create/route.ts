@@ -49,9 +49,9 @@ export default protectedProcedure
         name: ctx.user.name,
         avatar: ctx.user.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
         location: `${ctx.user.location.city}, ${ctx.user.location.region}`,
-        verified: ctx.user.verified || false,
-        rating: ctx.user.rating || 0,
-        joinedAt: ctx.user.joinedAt || new Date().toISOString(),
+        verified: ctx.user.verified,
+        rating: ctx.user.rating,
+        joinedAt: ctx.user.joinedAt,
         phone: ctx.user.phone,
       },
       statistics: {

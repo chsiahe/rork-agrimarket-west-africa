@@ -8,59 +8,7 @@ import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
 import { Product } from '@/types/product';
 import * as Location from 'expo-location';
-
-// West African countries GPS coordinates mapping
-const WEST_AFRICAN_LOCATIONS = {
-  // Senegal
-  'SN': {
-    'Dakar': {
-      'Dakar': { lat: 14.6928, lng: -17.4467 },
-      'Pikine': { lat: 14.7549, lng: -17.3983 },
-      'Guédiawaye': { lat: 14.7692, lng: -17.4056 },
-      'Rufisque': { lat: 14.7167, lng: -17.2667 },
-      'Bargny': { lat: 14.6833, lng: -17.2000 }
-    },
-    'Thiès': {
-      'Thiès': { lat: 14.7886, lng: -16.9246 },
-      'Mbour': { lat: 14.4167, lng: -16.9667 },
-      'Tivaouane': { lat: 14.9500, lng: -16.8167 },
-      'Joal-Fadiouth': { lat: 14.1667, lng: -16.8333 },
-      'Popenguine': { lat: 14.3500, lng: -17.1167 }
-    },
-    'Saint-Louis': {
-      'Saint-Louis': { lat: 16.0167, lng: -16.5000 },
-      'Dagana': { lat: 16.5167, lng: -15.5000 },
-      'Podor': { lat: 16.6500, lng: -14.9667 },
-      'Richard-Toll': { lat: 16.4667, lng: -15.7000 }
-    },
-    'Ziguinchor': {
-      'Ziguinchor': { lat: 12.5681, lng: -16.2719 },
-      'Oussouye': { lat: 12.4833, lng: -16.5500 },
-      'Bignona': { lat: 12.8167, lng: -16.2333 }
-    }
-  },
-  // Mali
-  'ML': {
-    'Bamako': {
-      'Bamako': { lat: 12.6392, lng: -8.0029 }
-    },
-    'Kayes': {
-      'Kayes': { lat: 14.4500, lng: -11.4333 },
-      'Kita': { lat: 13.0333, lng: -9.4833 },
-      'Bafoulabé': { lat: 13.8167, lng: -10.8333 }
-    }
-  },
-  // Burkina Faso
-  'BF': {
-    'Centre': {
-      'Ouagadougou': { lat: 12.3714, lng: -1.5197 }
-    },
-    'Hauts-Bassins': {
-      'Bobo-Dioulasso': { lat: 11.1781, lng: -4.2970 },
-      'Banfora': { lat: 10.6333, lng: -4.7500 }
-    }
-  }
-};
+import { findClosestLocation } from '@/constants/locations';
 
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{
@@ -92,7 +40,7 @@ export default function HomeScreen() {
       if (navigator.geolocation) {
         setIsLoadingLocation(true);
         navigator.geolocation.getCurrentPosition(
-          async (position) => {
+          async (position: GeolocationPosition) => {
             const { latitude, longitude } = position.coords;
             await reverseGeocode(latitude, longitude);
             setIsLoadingLocation(false);
@@ -147,11 +95,15 @@ export default function HomeScreen() {
     try {
       if (Platform.OS === 'web') {
         // For web, use coordinate-based mapping
-        const location = getLocationFromCoordinates(latitude, longitude);
-        setUserLocation({
-          ...location,
-          coordinates: { latitude, longitude }
-        });
+        const location = findClosestLocation(latitude, longitude);
+        if (location) {
+          setUserLocation({
+            city: location.city,
+            region: location.region,
+            country: location.country,
+            coordinates: { latitude, longitude }
+          });
+        }
         return;
       }
 
@@ -174,33 +126,6 @@ export default function HomeScreen() {
     } catch (error) {
       console.log('Reverse geocoding error:', error);
     }
-  };
-
-  const getLocationFromCoordinates = (lat: number, lng: number) => {
-    // Find the closest city based on coordinates
-    let closestCity = { city: 'Dakar', region: 'Dakar', country: 'Sénégal', distance: Infinity };
-    
-    Object.entries(WEST_AFRICAN_LOCATIONS).forEach(([countryCode, regions]) => {
-      Object.entries(regions).forEach(([regionName, cities]) => {
-        Object.entries(cities).forEach(([cityName, coords]) => {
-          const distance = Math.sqrt(
-            Math.pow(lat - coords.lat, 2) + Math.pow(lng - coords.lng, 2)
-          );
-          
-          if (distance < closestCity.distance) {
-            const countryName = countryCode === 'SN' ? 'Sénégal' : countryCode === 'ML' ? 'Mali' : 'Burkina Faso';
-            closestCity = {
-              city: cityName,
-              region: regionName,
-              country: countryName,
-              distance
-            };
-          }
-        });
-      });
-    });
-    
-    return closestCity;
   };
 
   const mapToWestAfricanLocation = (address: any) => {
