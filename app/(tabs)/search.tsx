@@ -118,8 +118,8 @@ export default function SearchScreen() {
     icon: cat.icon
   }));
 
-  return (
-    <View style={styles.container}>
+  const renderHeader = () => (
+    <>
       <View style={styles.searchHeader}>
         <View style={styles.searchBar}>
           <Search size={20} color={colors.textLight} />
@@ -149,6 +149,7 @@ export default function SearchScreen() {
               onSelect={setSelectedCategory}
               placeholder="Toutes les catégories"
               searchable={true}
+              autoComplete={true}
             />
           </View>
           
@@ -164,6 +165,7 @@ export default function SearchScreen() {
                     onSelect={handleCountryChange}
                     placeholder="Pays"
                     searchable={true}
+                    autoComplete={true}
                   />
                 </View>
               </View>
@@ -177,6 +179,7 @@ export default function SearchScreen() {
                     placeholder="Région"
                     disabled={!selectedCountry}
                     searchable={true}
+                    autoComplete={true}
                   />
                 </View>
                 
@@ -188,6 +191,7 @@ export default function SearchScreen() {
                     placeholder="Ville"
                     disabled={!selectedRegion}
                     searchable={true}
+                    autoComplete={true}
                   />
                 </View>
               </View>
@@ -234,34 +238,45 @@ export default function SearchScreen() {
         />
       </View>
 
-      <View style={styles.resultsSection}>
+      <View style={styles.resultsHeader}>
         <Text style={styles.resultsCount}>
           {searchResults?.total || 0} résultat(s) trouvé(s)
         </Text>
-        
-        {isLoading ? (
+      </View>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      {isLoading ? (
+        <>
+          {renderHeader()}
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Recherche en cours...</Text>
           </View>
-        ) : searchResults?.products.length === 0 ? (
+        </>
+      ) : searchResults?.products.length === 0 ? (
+        <>
+          {renderHeader()}
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
             <Text style={styles.emptySubtext}>
               Essayez de modifier vos critères de recherche
             </Text>
           </View>
-        ) : (
-          <FlatList
-            data={searchResults?.products || []}
-            renderItem={renderProduct}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
-            contentContainerStyle={styles.productsList}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+        </>
+      ) : (
+        <FlatList
+          data={searchResults?.products || []}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.productsList}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={renderHeader}
+        />
+      )}
     </View>
   );
 }
@@ -376,14 +391,13 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: colors.white,
   },
-  resultsSection: {
-    flex: 1,
+  resultsHeader: {
     padding: 16,
+    backgroundColor: colors.background,
   },
   resultsCount: {
     fontSize: 14,
     color: colors.textLight,
-    marginBottom: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -412,10 +426,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   productsList: {
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   row: {
     justifyContent: 'space-between',
+    marginTop: 12,
   },
   productCard: {
     width: '47%',

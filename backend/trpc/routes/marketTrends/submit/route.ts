@@ -20,6 +20,7 @@ export const submitMarketPrice = protectedProcedure
         throw new Error("Database connection not available");
       }
 
+      // Since we're using protectedProcedure, ctx.user should exist, but let's add a check
       if (!ctx.user) {
         throw new Error("User not authenticated");
       }

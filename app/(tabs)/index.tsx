@@ -214,144 +214,183 @@ export default function HomeScreen() {
     </View>
   );
 
-  // Separate components to avoid nesting FlatList inside ScrollView
-  const CategorySection = () => (
-    <View style={styles.categories}>
-      <Text style={styles.sectionTitle}>Catégories</Text>
-      <FlatList
-        data={categories}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            key={item.id} 
-            style={styles.categoryCard}
-            onPress={() => handleCategoryPress(item.name)}
-          >
-            <View style={styles.categoryIcon}>
-              <Text style={styles.categoryEmoji}>{item.icon}</Text>
-            </View>
-            <Text style={styles.categoryName}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.categoryList}
-      />
-    </View>
-  );
-
-  const ProductsSection = () => (
-    <View style={styles.featured}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Annonces près de vous</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
-          <Text style={styles.seeAll}>Voir tout</Text>
+  const renderHeader = () => (
+    <>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Bonjour!</Text>
+          <Text style={styles.title}>AgriConnect</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.locationButton}
+          onPress={handleLocationPress}
+        >
+          {isLoadingLocation ? (
+            <Navigation size={18} color={colors.primary} />
+          ) : (
+            <MapPin size={18} color={colors.primary} />
+          )}
+          <Text style={styles.locationText}>
+            {isLoadingLocation ? 'Localisation...' : userLocation.city}
+          </Text>
         </TouchableOpacity>
       </View>
-      
-      <View style={styles.productGrid}>
-        {isLoading ? (
-          <Text style={styles.loadingText}>Chargement...</Text>
-        ) : products?.products.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Aucune annonce disponible dans votre région</Text>
-            <Text style={styles.emptySubtext}>
-              Soyez le premier à publier une annonce !
-            </Text>
-            <TouchableOpacity 
-              style={styles.emptyButton}
-              onPress={() => router.push('/(tabs)/post')}
-            >
-              <Text style={styles.emptyButtonText}>Publier une annonce</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          products?.products.map((product: Product) => (
-            <TouchableOpacity 
-              key={product.id} 
-              style={styles.productCard}
-              onPress={() => router.push(`/products/${product.id}`)}
-            >
-              <Image
-                source={product.images[0]}
-                style={styles.productImage}
-                contentFit="cover"
-              />
-              <View style={styles.productInfo}>
-                <Text style={styles.productName} numberOfLines={2}>
-                  {product.title}
-                </Text>
-                <View style={styles.priceRow}>
-                  <Text style={styles.productPrice}>
-                    {product.price} FCFA/{product.unit}
-                  </Text>
-                  {product.negotiable && (
-                    <Text style={styles.negotiableTag}>Négociable</Text>
-                  )}
-                </View>
-                <View style={styles.productLocation}>
-                  <MapPin size={12} color={colors.textLight} />
-                  <Text style={styles.locationText}>
-                    {product.location.city}
-                  </Text>
-                </View>
-                <View style={styles.productStats}>
-                  <View style={styles.stat}>
-                    <Eye size={12} color={colors.textLight} />
-                    <Text style={styles.statText}>{product.statistics.views}</Text>
-                  </View>
-                  {product.seller.verified && (
-                    <View style={styles.verifiedBadge}>
-                      <Star size={12} color={colors.secondary} />
-                      <Text style={styles.verifiedText}>Vérifié</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-    </View>
-  );
 
-  const TrendsSection = () => (
-    <View style={styles.trending}>
-      <View style={styles.sectionHeader}>
-        <TrendingUp size={20} color={colors.primary} />
-        <Text style={styles.sectionTitle}>Tendances du marché</Text>
+      <View style={styles.searchSection}>
+        <TouchableOpacity 
+          style={styles.searchButton}
+          onPress={() => router.push('/(tabs)/search')}
+        >
+          <Text style={styles.searchText}>Rechercher un produit...</Text>
+        </TouchableOpacity>
       </View>
-      
-      {isLoadingTrends ? (
-        <View style={styles.trendingCard}>
-          <Text style={styles.trendingText}>Chargement des tendances...</Text>
-        </View>
-      ) : marketTrends && marketTrends.length > 0 ? (
+
+      {/* Categories Section */}
+      <View style={styles.categories}>
+        <Text style={styles.sectionTitle}>Catégories</Text>
         <FlatList
-          data={marketTrends}
-          renderItem={renderTrendItem}
-          keyExtractor={(item, index) => `${item.category}-${item.city}-${index}`}
+          data={categories}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              key={item.id} 
+              style={styles.categoryCard}
+              onPress={() => handleCategoryPress(item.name)}
+            >
+              <View style={styles.categoryIcon}>
+                <Text style={styles.categoryEmoji}>{item.icon}</Text>
+              </View>
+              <Text style={styles.categoryName}>{item.name}</Text>
+            </TouchableOpacity>
+          )}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.trendsList}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.categoryList}
         />
-      ) : (
-        <View style={styles.trendingCard}>
-          <Text style={styles.trendingText}>
-            Aucune donnée de marché disponible pour {userLocation.city}
-          </Text>
-          <TouchableOpacity 
-            style={styles.contributeButton}
-            onPress={() => {
-              setActiveTab('market');
-              router.push('/(tabs)/profile');
-            }}
-          >
-            <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
+      </View>
+
+      {/* Products Section */}
+      <View style={styles.featured}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Annonces près de vous</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
+            <Text style={styles.seeAll}>Voir tout</Text>
           </TouchableOpacity>
         </View>
-      )}
-    </View>
+        
+        <View style={styles.productGrid}>
+          {isLoading ? (
+            <Text style={styles.loadingText}>Chargement...</Text>
+          ) : products?.products.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Aucune annonce disponible dans votre région</Text>
+              <Text style={styles.emptySubtext}>
+                Soyez le premier à publier une annonce !
+              </Text>
+              <TouchableOpacity 
+                style={styles.emptyButton}
+                onPress={() => router.push('/(tabs)/post')}
+              >
+                <Text style={styles.emptyButtonText}>Publier une annonce</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            products?.products.map((product: Product) => (
+              <TouchableOpacity 
+                key={product.id} 
+                style={styles.productCard}
+                onPress={() => router.push(`/products/${product.id}`)}
+              >
+                <Image
+                  source={product.images[0]}
+                  style={styles.productImage}
+                  contentFit="cover"
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName} numberOfLines={2}>
+                    {product.title}
+                  </Text>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.productPrice}>
+                      {product.price} FCFA/{product.unit}
+                    </Text>
+                    {product.negotiable && (
+                      <Text style={styles.negotiableTag}>Négociable</Text>
+                    )}
+                  </View>
+                  <View style={styles.productLocation}>
+                    <MapPin size={12} color={colors.textLight} />
+                    <Text style={styles.locationText}>
+                      {product.location.city}
+                    </Text>
+                  </View>
+                  <View style={styles.productStats}>
+                    <View style={styles.stat}>
+                      <Eye size={12} color={colors.textLight} />
+                      <Text style={styles.statText}>{product.statistics.views}</Text>
+                    </View>
+                    {product.seller.verified && (
+                      <View style={styles.verifiedBadge}>
+                        <Star size={12} color={colors.secondary} />
+                        <Text style={styles.verifiedText}>Vérifié</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </View>
+
+      {/* Trends Section */}
+      <View style={styles.trending}>
+        <View style={styles.sectionHeader}>
+          <TrendingUp size={20} color={colors.primary} />
+          <Text style={styles.sectionTitle}>Tendances du marché</Text>
+        </View>
+        
+        {isLoadingTrends ? (
+          <View style={styles.trendingCard}>
+            <Text style={styles.trendingText}>Chargement des tendances...</Text>
+          </View>
+        ) : marketTrends && marketTrends.length > 0 ? (
+          <FlatList
+            data={marketTrends}
+            renderItem={renderTrendItem}
+            keyExtractor={(item, index) => `${item.category}-${item.city}-${index}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.trendsList}
+          />
+        ) : (
+          <View style={styles.trendingCard}>
+            <Text style={styles.trendingText}>
+              Aucune donnée de marché disponible pour {userLocation.city}
+            </Text>
+            <TouchableOpacity 
+              style={styles.contributeButton}
+              onPress={() => {
+                setActiveTab('market');
+                router.push('/(tabs)/profile');
+              }}
+            >
+              <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </>
+  );
+
+  const renderFooter = () => (
+    userLocation.coordinates ? (
+      <View style={styles.gpsInfo}>
+        <Text style={styles.gpsText}>
+          📍 Position GPS: {userLocation.coordinates.latitude.toFixed(4)}, {userLocation.coordinates.longitude.toFixed(4)}
+        </Text>
+      </View>
+    ) : null
   );
 
   return (
@@ -360,51 +399,8 @@ export default function HomeScreen() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
-      ListHeaderComponent={
-        <>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Bonjour!</Text>
-              <Text style={styles.title}>AgriConnect</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.locationButton}
-              onPress={handleLocationPress}
-            >
-              {isLoadingLocation ? (
-                <Navigation size={18} color={colors.primary} />
-              ) : (
-                <MapPin size={18} color={colors.primary} />
-              )}
-              <Text style={styles.locationText}>
-                {isLoadingLocation ? 'Localisation...' : userLocation.city}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.searchSection}>
-            <TouchableOpacity 
-              style={styles.searchButton}
-              onPress={() => router.push('/(tabs)/search')}
-            >
-              <Text style={styles.searchText}>Rechercher un produit...</Text>
-            </TouchableOpacity>
-          </View>
-
-          <CategorySection />
-          <ProductsSection />
-          <TrendsSection />
-        </>
-      }
-      ListFooterComponent={
-        userLocation.coordinates ? (
-          <View style={styles.gpsInfo}>
-            <Text style={styles.gpsText}>
-              📍 Position GPS: {userLocation.coordinates.latitude.toFixed(4)}, {userLocation.coordinates.longitude.toFixed(4)}
-            </Text>
-          </View>
-        ) : null
-      }
+      ListHeaderComponent={renderHeader}
+      ListFooterComponent={renderFooter}
       data={[]} // Empty data array since we're using ListHeaderComponent
       renderItem={() => null}
     />

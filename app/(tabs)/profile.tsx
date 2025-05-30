@@ -153,56 +153,60 @@ export default function ProfileScreen() {
           <Text style={styles.addButtonText}>+ Nouvelle annonce</Text>
         </TouchableOpacity>
       </View>
-      <FlatList
-        data={userListings?.products || []}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.productsList}
-        showsVerticalScrollIndicator={false}
-        onRefresh={refetchListings}
-        refreshing={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Package size={48} color={colors.textLight} />
-            <Text style={styles.emptyText}>Aucune annonce publiée</Text>
-            <Text style={styles.emptySubtext}>
-              Commencez par publier votre première annonce
-            </Text>
-            <TouchableOpacity 
-              style={styles.emptyButton}
-              onPress={() => router.push('/(tabs)/post')}
-            >
-              <Text style={styles.emptyButtonText}>Publier une annonce</Text>
-            </TouchableOpacity>
-          </View>
-        }
-      />
+      
+      {userListings?.products && userListings.products.length > 0 ? (
+        <FlatList
+          data={userListings.products}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.productsList}
+          showsVerticalScrollIndicator={false}
+          onRefresh={refetchListings}
+          refreshing={false}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <Package size={48} color={colors.textLight} />
+          <Text style={styles.emptyText}>Aucune annonce publiée</Text>
+          <Text style={styles.emptySubtext}>
+            Commencez par publier votre première annonce
+          </Text>
+          <TouchableOpacity 
+            style={styles.emptyButton}
+            onPress={() => router.push('/(tabs)/post')}
+          >
+            <Text style={styles.emptyButtonText}>Publier une annonce</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 
   const renderFavoritesTab = () => (
     <View style={styles.tabContent}>
       <Text style={styles.tabTitle}>Favoris</Text>
-      <FlatList
-        data={favorites}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.productsList}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Heart size={48} color={colors.textLight} />
-            <Text style={styles.emptyText}>Aucun favori</Text>
-            <Text style={styles.emptySubtext}>
-              Les produits que vous aimez apparaîtront ici
-            </Text>
-          </View>
-        }
-      />
+      
+      {favorites.length > 0 ? (
+        <FlatList
+          data={favorites}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.productsList}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <Heart size={48} color={colors.textLight} />
+          <Text style={styles.emptyText}>Aucun favori</Text>
+          <Text style={styles.emptySubtext}>
+            Les produits que vous aimez apparaîtront ici
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -267,6 +271,7 @@ export default function ProfileScreen() {
             onSelect={setCategory}
             placeholder="Sélectionner une catégorie"
             searchable={true}
+            autoComplete={true}
           />
           
           <Text style={styles.label}>Ville / Marché</Text>
@@ -276,6 +281,7 @@ export default function ProfileScreen() {
             onSelect={setCity}
             placeholder="Sélectionner une ville"
             searchable={true}
+            autoComplete={true}
           />
           
           <View style={styles.priceRow}>
