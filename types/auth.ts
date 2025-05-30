@@ -1,44 +1,71 @@
+// types/auth.ts
+
 import { User, UserRole, Location, OperatingArea } from './user';
 
+/**
+ * Export core user-related types for use elsewhere.
+ */
 export type { UserRole, User, Location, OperatingArea } from './user';
 
+/**
+ * Describes the authentication state in the app.
+ */
 export interface AuthState {
-  user: User | null;
-  token: string | null;
+  user?: User; // Use optional properties where possible for stricter null safety
+  token?: string;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
+/**
+ * Standardized error interface for authentication.
+ */
+export interface AuthError {
+  message: string;
+  code?: string;
+}
+
+/**
+ * Request payload for logging in.
+ */
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface RegisterRequest {
+/**
+ * Shared fields for registration and profile updates.
+ */
+interface BaseProfileRequest {
   name: string;
   email: string;
   phone: string;
+  country: string;
+  region: string;
+  city: string;
+  operatingAreas?: OperatingArea;
+}
+
+/**
+ * Request payload for registering a new user.
+ */
+export interface RegisterRequest extends BaseProfileRequest {
   password: string;
-  country: string;
-  region: string;
-  city: string;
   role: UserRole;
-  operatingAreas?: OperatingArea;
 }
 
-export interface UpdateProfileRequest {
+/**
+ * Request payload for updating a user's profile.
+ */
+export interface UpdateProfileRequest extends BaseProfileRequest {
   userId?: string;
-  name: string;
-  email: string;
-  phone: string;
-  country: string;
-  region: string;
-  city: string;
   avatar?: string;
-  operatingAreas?: OperatingArea;
 }
 
-export interface AuthResponse {
-  user: User;
+/**
+ * Standardized authentication response from the server.
+ */
+export interface AuthResponse<T = User> {
+  user: T;
   token: string;
 }
