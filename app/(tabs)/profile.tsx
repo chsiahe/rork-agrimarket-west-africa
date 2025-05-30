@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, TextInput, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { 
   User, 
@@ -53,6 +53,9 @@ export default function ProfileScreen() {
   const [price, setPrice] = useState('');
   const [unit, setUnit] = useState('kg');
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
   const submitMutation = trpc.marketTrends.submit.useMutation({
     onMutate: () => setSubmissionStatus('submitting'),
@@ -233,153 +236,176 @@ export default function ProfileScreen() {
   );
 
   const renderMarketTab = () => (
-    <FlatList
-      data={[1]} // Just a dummy item to render the content
-      keyExtractor={() => "market-tab"}
-      renderItem={() => (
-        <View style={styles.tabContent}>
-          <Text style={styles.tabTitle}>Tendances du marché</Text>
-          <Text style={styles.tabSubtitle}>
-            Contribuez aux données de prix du marché dans votre région
-          </Text>
+    <ScrollView
+      style={styles.tabContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={styles.tabTitle}>Tendances du marché</Text>
+      <Text style={styles.tabSubtitle}>
+        Contribuez aux données de prix du marché dans votre région
+      </Text>
+      
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Produit / Catégorie</Text>
+          <TouchableOpacity 
+            style={styles.dropdownInput}
+            onPress={() => {
+              setShowCategoryDropdown(!showCategoryDropdown);
+              setShowCityDropdown(false);
+              setShowUnitDropdown(false);
+            }}
+          >
+            <Text style={styles.dropdownText}>{category}</Text>
+            <View style={styles.dropdownArrow} />
+          </TouchableOpacity>
           
-          <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Produit / Catégorie</Text>
-              <View style={styles.dropdownInput}>
-                <Text style={styles.dropdownText}>{category}</Text>
-                <View style={styles.dropdownArrow} />
-              </View>
-              <FlatList
-                data={categories}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.dropdownItem,
-                      item.name === category && styles.dropdownItemSelected
-                    ]}
-                    onPress={() => setCategory(item.name)}
-                  >
-                    <Text style={[
-                      styles.dropdownItemText,
-                      item.name === category && styles.dropdownItemTextSelected
-                    ]}>
-                      {item.icon} {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                style={styles.dropdownList}
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled={true}
+          {showCategoryDropdown && (
+            <View style={styles.dropdownList}>
+              {categories.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.dropdownItem,
+                    item.name === category && styles.dropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    setCategory(item.name);
+                    setShowCategoryDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    item.name === category && styles.dropdownItemTextSelected
+                  ]}>
+                    {item.icon} {item.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          
+          <Text style={styles.label}>Ville / Marché</Text>
+          <TouchableOpacity 
+            style={styles.dropdownInput}
+            onPress={() => {
+              setShowCityDropdown(!showCityDropdown);
+              setShowCategoryDropdown(false);
+              setShowUnitDropdown(false);
+            }}
+          >
+            <Text style={styles.dropdownText}>{city}</Text>
+            <View style={styles.dropdownArrow} />
+          </TouchableOpacity>
+          
+          {showCityDropdown && (
+            <View style={styles.dropdownList}>
+              {cities.map((item, index) => (
+                <TouchableOpacity
+                  key={`${item.city}-${index}`}
+                  style={[
+                    styles.dropdownItem,
+                    item.city === city && styles.dropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    setCity(item.city);
+                    setShowCityDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    item.city === city && styles.dropdownItemTextSelected
+                  ]}>
+                    {item.city}, {item.region}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          
+          <View style={styles.priceRow}>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.label}>Prix (FCFA)</Text>
+              <TextInput
+                style={styles.textInput}
+                value={price}
+                onChangeText={setPrice}
+                placeholder="Entrez le prix"
+                keyboardType="numeric"
               />
-              
-              <Text style={styles.label}>Ville / Marché</Text>
-              <View style={styles.dropdownInput}>
-                <Text style={styles.dropdownText}>{city}</Text>
-                <View style={styles.dropdownArrow} />
-              </View>
-              <FlatList
-                data={cities}
-                keyExtractor={(item, index) => `${item.city}-${index}`}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.dropdownItem,
-                      item.city === city && styles.dropdownItemSelected
-                    ]}
-                    onPress={() => setCity(item.city)}
-                  >
-                    <Text style={[
-                      styles.dropdownItemText,
-                      item.city === city && styles.dropdownItemTextSelected
-                    ]}>
-                      {item.city}, {item.region}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                style={styles.dropdownList}
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled={true}
-              />
-              
-              <View style={styles.priceRow}>
-                <View style={styles.priceInputContainer}>
-                  <Text style={styles.label}>Prix (FCFA)</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={price}
-                    onChangeText={setPrice}
-                    placeholder="Entrez le prix"
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.unitInputContainer}>
-                  <Text style={styles.label}>Unité</Text>
-                  <View style={styles.dropdownInputSmall}>
-                    <Text style={styles.dropdownText}>{unit}</Text>
-                    <View style={styles.dropdownArrow} />
-                  </View>
-                  <FlatList
-                    data={['kg', 'tonne', 'sac', 'pièce', 'litre']}
-                    keyExtractor={(item) => item}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={[
-                          styles.dropdownItemSmall,
-                          item === unit && styles.dropdownItemSelected
-                        ]}
-                        onPress={() => setUnit(item)}
-                      >
-                        <Text style={[
-                          styles.dropdownItemText,
-                          item === unit && styles.dropdownItemTextSelected
-                        ]}>
-                          {item}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    style={styles.dropdownListSmall}
-                    showsVerticalScrollIndicator={false}
-                    nestedScrollEnabled={true}
-                  />
-                </View>
-              </View>
-              
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  submissionStatus === 'submitting' && styles.submitButtonDisabled
-                ]}
-                onPress={handleSubmitPrice}
-                disabled={submissionStatus === 'submitting'}
+            </View>
+            <View style={styles.unitInputContainer}>
+              <Text style={styles.label}>Unité</Text>
+              <TouchableOpacity 
+                style={styles.dropdownInputSmall}
+                onPress={() => {
+                  setShowUnitDropdown(!showUnitDropdown);
+                  setShowCategoryDropdown(false);
+                  setShowCityDropdown(false);
+                }}
               >
-                <Text style={styles.submitButtonText}>
-                  {submissionStatus === 'submitting' ? 'Envoi...' : 'Soumettre le prix'}
-                </Text>
+                <Text style={styles.dropdownText}>{unit}</Text>
+                <View style={styles.dropdownArrow} />
               </TouchableOpacity>
               
-              {submissionStatus === 'success' && (
-                <Text style={styles.successMessage}>
-                  Prix soumis avec succès. Merci de votre contribution!
-                </Text>
-              )}
-              {submissionStatus === 'error' && (
-                <Text style={styles.errorMessage}>
-                  Erreur lors de la soumission. Veuillez vérifier les données et réessayer.
-                </Text>
+              {showUnitDropdown && (
+                <View style={styles.dropdownListSmall}>
+                  {['kg', 'tonne', 'sac', 'pièce', 'litre'].map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      style={[
+                        styles.dropdownItemSmall,
+                        item === unit && styles.dropdownItemSelected
+                      ]}
+                      onPress={() => {
+                        setUnit(item);
+                        setShowUnitDropdown(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.dropdownItemText,
+                        item === unit && styles.dropdownItemTextSelected
+                      ]}>
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               )}
             </View>
-            
-            <Text style={styles.infoText}>
-              Vos contributions aident les agriculteurs et acheteurs à comprendre les tendances du marché. 
-              Soumettez uniquement des prix réels observés sur le marché.
-            </Text>
           </View>
+          
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              submissionStatus === 'submitting' && styles.submitButtonDisabled
+            ]}
+            onPress={handleSubmitPrice}
+            disabled={submissionStatus === 'submitting'}
+          >
+            <Text style={styles.submitButtonText}>
+              {submissionStatus === 'submitting' ? 'Envoi...' : 'Soumettre le prix'}
+            </Text>
+          </TouchableOpacity>
+          
+          {submissionStatus === 'success' && (
+            <Text style={styles.successMessage}>
+              Prix soumis avec succès. Merci de votre contribution!
+            </Text>
+          )}
+          {submissionStatus === 'error' && (
+            <Text style={styles.errorMessage}>
+              Erreur lors de la soumission. Veuillez vérifier les données et réessayer.
+            </Text>
+          )}
         </View>
-      )}
-      showsVerticalScrollIndicator={false}
-    />
+        
+        <Text style={styles.infoText}>
+          Vos contributions aident les agriculteurs et acheteurs à comprendre les tendances du marché. 
+          Soumettez uniquement des prix réels observés sur le marché.
+        </Text>
+      </View>
+    </ScrollView>
   );
 
   // Use profile data if available, otherwise fallback to user data or defaults

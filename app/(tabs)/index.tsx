@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Alert, Platform, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { categories } from '@/constants/categories';
 import { colors } from '@/constants/colors';
@@ -8,7 +8,7 @@ import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
 import { Product } from '@/types/product';
 import * as Location from 'expo-location';
-import { findClosestLocation, LocationData } from '@/constants/locations';
+import { findClosestLocation } from '@/constants/locations';
 import { LineChart } from '@/components/LineChart';
 import { MarketTrendAggregate } from '@/types/marketTrend';
 
@@ -186,6 +186,32 @@ export default function HomeScreen() {
     refetchTrends();
   }, [refetch, refetchTrends]);
 
+  const renderTrendItem = ({ item }: { item: MarketTrendAggregate }) => (
+    <View style={styles.trendItem}>
+      <Text style={styles.trendTitle}>
+        {item.category} à {item.city}
+      </Text>
+      <Text style={styles.trendPrice}>
+        {item.averagePrice} FCFA/{item.unit}
+      </Text>
+      <Text style={styles.trendSubmissions}>
+        Basé sur {item.submissions} soumission{item.submissions > 1 ? 's' : ''}
+      </Text>
+      {item.dataPoints.length > 1 && (
+        <LineChart data={item.dataPoints} />
+      )}
+      <TouchableOpacity 
+        style={styles.contributeButton}
+        onPress={() => {
+          setActiveTab('market');
+          router.push('/(tabs)/profile');
+        }}
+      >
+        <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <ScrollView 
       style={styles.container}
@@ -326,39 +352,15 @@ export default function HomeScreen() {
             <Text style={styles.trendingText}>Chargement des tendances...</Text>
           </View>
         ) : marketTrends && marketTrends.length > 0 ? (
-          <ScrollView 
-            horizontal 
+          <FlatList
+            data={marketTrends}
+            renderItem={renderTrendItem}
+            keyExtractor={(item, index) => `${item.category}-${item.city}-${index}`}
+            horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.trendsCarousel}
-          >
-            <View style={styles.trendsList}>
-              {marketTrends.map((trend: MarketTrendAggregate, index: number) => (
-                <View key={`${trend.category}-${trend.city}-${index}`} style={styles.trendItem}>
-                  <Text style={styles.trendTitle}>
-                    {trend.category} à {trend.city}
-                  </Text>
-                  <Text style={styles.trendPrice}>
-                    {trend.averagePrice} FCFA/{trend.unit}
-                  </Text>
-                  <Text style={styles.trendSubmissions}>
-                    Basé sur {trend.submissions} soumission{trend.submissions > 1 ? 's' : ''}
-                  </Text>
-                  {trend.dataPoints.length > 1 && (
-                    <LineChart data={trend.dataPoints} />
-                  )}
-                  <TouchableOpacity 
-                    style={styles.contributeButton}
-                    onPress={() => {
-                      setActiveTab('market');
-                      router.push('/(tabs)/profile');
-                    }}
-                  >
-                    <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
+            contentContainerStyle={styles.trendsList}
+            scrollEnabled={true}
+          />
         ) : (
           <View style={styles.trendingCard}>
             <Text style={styles.trendingText}>
@@ -625,13 +627,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  trendsCarousel: {
-    maxHeight: 300,
-  },
   trendsList: {
-    flexDirection: 'row',
-    gap: 16,
     paddingRight: 16,
+    gap: 16,
   },
   trendItem: {
     backgroundColor: colors.white,
