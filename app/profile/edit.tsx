@@ -18,7 +18,8 @@ import {
   Phone, 
   Camera, 
   Save,
-  X
+  X,
+  Image as ImageIcon
 } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/auth-store';
@@ -264,7 +265,7 @@ export default function EditProfileScreen() {
                   style={[styles.cameraButton, styles.galleryButton]}
                   onPress={handlePickImage}
                 >
-                  <Image size={16} color={colors.white} />
+                  <ImageIcon size={16} color={colors.white} />
                 </TouchableOpacity>
               </View>
             </View>

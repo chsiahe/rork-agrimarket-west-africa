@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, FlatList, KeyboardAvoidingView } from 'react-native';
 import { Image } from 'expo-image';
-import { Camera, X, Truck, MapPin, Navigation, Tag, FileText, Calendar, Info, Edit } from 'lucide-react-native';
+import { Camera, X, Truck, MapPin, Navigation, Tag, FileText, Calendar, Info, Edit, Image as ImageIcon } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -906,7 +906,7 @@ export default function PostScreen() {
       
       <View style={styles.photoButtons}>
         <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-          <Image size={24} color={colors.secondary} />
+          <ImageIcon size={24} color={colors.secondary} />
           <Text style={styles.photoButtonText}>
             Galerie
           </Text>

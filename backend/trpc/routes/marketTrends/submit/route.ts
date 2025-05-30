@@ -26,7 +26,7 @@ export const submitMarketPrice = protectedProcedure
       }
 
       const submission: MarketTrendSubmission = {
-        userId: ctx.user.id,
+        userId: ctx.user.id, // Now TypeScript knows ctx.user is not null
         category: input.category,
         city: input.city,
         region: input.region,
