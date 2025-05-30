@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { Camera, X, Truck, MapPin, Navigation } from 'lucide-react-native';
+import { Camera, X, Truck, MapPin, Navigation, Tag, FileText, Calendar, Info } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -9,11 +9,11 @@ import { trpc } from '@/lib/trpc';
 import { router } from 'expo-router';
 import { ProductCondition, DeliveryMode, ProductLocation } from '@/types/product';
 import { categories } from '@/constants/categories';
-import { units, convertUnit } from '@/constants/units';
+import { units } from '@/constants/units';
 import { Dropdown } from '@/components/Dropdown';
 import { DatePicker } from '@/components/DatePicker';
 import { LocationSelector } from '@/components/LocationSelector';
-import { findClosestLocation, getRegionCoordinates, LocationData } from '@/constants/locations';
+import { findClosestLocation, getRegionCoordinates } from '@/constants/locations';
 
 const conditionOptions: { value: ProductCondition; label: string }[] = [
   { value: 'new', label: 'Neuf' },
@@ -28,7 +28,10 @@ const deliveryOptions: { value: DeliveryMode; label: string }[] = [
   { value: 'pickup', label: 'Retrait sur place' },
 ];
 
+type PostTab = 'product' | 'details' | 'location' | 'delivery' | 'photos';
+
 export default function PostScreen() {
+  const [activeTab, setActiveTab] = useState<PostTab>('product');
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -221,6 +224,7 @@ export default function PostScreen() {
     setFreeDelivery(true);
     setDeliveryFees('');
     setAllowCalls(false);
+    setActiveTab('product');
   };
 
   const pickImage = async () => {
@@ -272,23 +276,71 @@ export default function PostScreen() {
     return true;
   };
 
-  const handleSubmit = () => {
-    if (!title || !price || !quantity || !location.country || !location.region || !location.city || !category || !startDate) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
-      return;
+  const validateForm = () => {
+    if (!title) {
+      Alert.alert('Erreur', 'Veuillez saisir le nom du produit');
+      setActiveTab('product');
+      return false;
     }
-
-    if (images.length === 0) {
-      Alert.alert('Erreur', 'Veuillez ajouter au moins une photo');
-      return;
+    
+    if (!category) {
+      Alert.alert('Erreur', 'Veuillez sélectionner une catégorie');
+      setActiveTab('product');
+      return false;
     }
-
+    
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+      Alert.alert('Erreur', 'Veuillez saisir un prix valide');
+      setActiveTab('product');
+      return false;
+    }
+    
+    if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+      Alert.alert('Erreur', 'Veuillez saisir une quantité valide');
+      setActiveTab('details');
+      return false;
+    }
+    
+    if (!location.country || !location.region || !location.city) {
+      Alert.alert('Erreur', 'Veuillez sélectionner une localisation complète');
+      setActiveTab('location');
+      return false;
+    }
+    
+    if (!startDate) {
+      Alert.alert('Erreur', 'Veuillez sélectionner une date de disponibilité');
+      setActiveTab('details');
+      return false;
+    }
+    
+    if (!validateDates()) {
+      setActiveTab('details');
+      return false;
+    }
+    
     if (deliveryModes.length === 0) {
       Alert.alert('Erreur', 'Veuillez sélectionner au moins un mode de livraison');
-      return;
+      setActiveTab('delivery');
+      return false;
     }
+    
+    if (!freeDelivery && (!deliveryFees || isNaN(Number(deliveryFees)) || Number(deliveryFees) < 0)) {
+      Alert.alert('Erreur', 'Veuillez saisir des frais de livraison valides');
+      setActiveTab('delivery');
+      return false;
+    }
+    
+    if (images.length === 0) {
+      Alert.alert('Erreur', 'Veuillez ajouter au moins une photo');
+      setActiveTab('photos');
+      return false;
+    }
+    
+    return true;
+  };
 
-    if (!validateDates()) {
+  const handleSubmit = () => {
+    if (!validateForm()) {
       return;
     }
 
@@ -349,291 +401,462 @@ export default function PostScreen() {
     });
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.imageSection}>
-        <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
-          <Camera size={24} color={colors.secondary} />
-          <Text style={styles.addImageText}>
-            Ajouter des photos ({images.length}/5)
-          </Text>
-        </TouchableOpacity>
+  const renderTabIndicator = () => (
+    <View style={styles.tabIndicator}>
+      <TouchableOpacity 
+        style={[styles.tabButton, activeTab === 'product' && styles.activeTabButton]}
+        onPress={() => setActiveTab('product')}
+      >
+        <Tag size={20} color={activeTab === 'product' ? colors.white : colors.textLight} />
+        <Text style={[styles.tabButtonText, activeTab === 'product' && styles.activeTabButtonText]}>
+          Produit
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[styles.tabButton, activeTab === 'details' && styles.activeTabButton]}
+        onPress={() => setActiveTab('details')}
+      >
+        <Info size={20} color={activeTab === 'details' ? colors.white : colors.textLight} />
+        <Text style={[styles.tabButtonText, activeTab === 'details' && styles.activeTabButtonText]}>
+          Détails
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[styles.tabButton, activeTab === 'location' && styles.activeTabButton]}
+        onPress={() => setActiveTab('location')}
+      >
+        <MapPin size={20} color={activeTab === 'location' ? colors.white : colors.textLight} />
+        <Text style={[styles.tabButtonText, activeTab === 'location' && styles.activeTabButtonText]}>
+          Lieu
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[styles.tabButton, activeTab === 'delivery' && styles.activeTabButton]}
+        onPress={() => setActiveTab('delivery')}
+      >
+        <Truck size={20} color={activeTab === 'delivery' ? colors.white : colors.textLight} />
+        <Text style={[styles.tabButtonText, activeTab === 'delivery' && styles.activeTabButtonText]}>
+          Livraison
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[styles.tabButton, activeTab === 'photos' && styles.activeTabButton]}
+        onPress={() => setActiveTab('photos')}
+      >
+        <Camera size={20} color={activeTab === 'photos' ? colors.white : colors.textLight} />
+        <Text style={[styles.tabButtonText, activeTab === 'photos' && styles.activeTabButtonText]}>
+          Photos
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderProductTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Nom du produit *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: Maïs jaune sec, Motoculteur thermique"
+          placeholderTextColor={colors.textLight}
+          value={title}
+          onChangeText={setTitle}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Catégorie *</Text>
+        <Dropdown
+          options={categoryOptions}
+          value={category}
+          onSelect={setCategory}
+          placeholder="Sélectionner une catégorie"
+          searchable={true}
+        />
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, { flex: 2 }]}>
+          <Text style={styles.label}>Prix *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Prix en FCFA"
+            keyboardType="numeric"
+            placeholderTextColor={colors.textLight}
+            value={price}
+            onChangeText={setPrice}
+          />
+        </View>
         
-        {images.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreview}>
-            {images.map((uri, index) => (
-              <View key={index} style={styles.previewContainer}>
-                <Image source={uri} style={styles.preview} />
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => setImages(images.filter((_, i) => i !== index))}
-                >
-                  <X size={16} color={colors.white} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
+        <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
+          <Text style={styles.label}>Unité *</Text>
+          <Dropdown
+            options={unitOptions}
+            value={unit}
+            onSelect={setUnit}
+            placeholder="Unité"
+            searchable={false}
+          />
+        </View>
+      </View>
+
+      <TouchableOpacity 
+        style={styles.checkboxRow}
+        onPress={() => setNegotiable(!negotiable)}
+      >
+        <View style={[styles.checkbox, negotiable && styles.checkboxChecked]}>
+          {negotiable && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.checkboxLabel}>Prix négociable</Text>
+      </TouchableOpacity>
+
+      <View style={styles.navigationButtons}>
+        <TouchableOpacity 
+          style={[styles.nextButton, (!title || !category || !price) && styles.nextButtonDisabled]}
+          onPress={() => setActiveTab('details')}
+          disabled={!title || !category || !price}
+        >
+          <Text style={styles.nextButtonText}>Suivant: Détails</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderDetailsTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Quantité disponible *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Quantité disponible"
+          keyboardType="numeric"
+          placeholderTextColor={colors.textLight}
+          value={quantity}
+          onChangeText={setQuantity}
+        />
+        {quantity && unit && (
+          <Text style={styles.quantityHelper}>
+            {quantity} {units.find(u => u.value === unit)?.label}
+          </Text>
         )}
       </View>
 
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nom du produit *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: Maïs jaune sec, Motoculteur thermique"
-            placeholderTextColor={colors.textLight}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Catégorie *</Text>
-          <Dropdown
-            options={categoryOptions}
-            value={category}
-            onSelect={setCategory}
-            placeholder="Sélectionner une catégorie"
-          />
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 2 }]}>
-            <Text style={styles.label}>Prix *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Prix en FCFA"
-              keyboardType="numeric"
-              placeholderTextColor={colors.textLight}
-              value={price}
-              onChangeText={setPrice}
-            />
-          </View>
-          
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
-            <Text style={styles.label}>Unité *</Text>
-            <Dropdown
-              options={unitOptions}
-              value={unit}
-              onSelect={setUnit}
-              placeholder="Unité"
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.checkboxRow}
-          onPress={() => setNegotiable(!negotiable)}
-        >
-          <View style={[styles.checkbox, negotiable && styles.checkboxChecked]}>
-            {negotiable && <Text style={styles.checkmark}>✓</Text>}
-          </View>
-          <Text style={styles.checkboxLabel}>Prix négociable</Text>
-        </TouchableOpacity>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Quantité disponible *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Quantité disponible"
-            keyboardType="numeric"
-            placeholderTextColor={colors.textLight}
-            value={quantity}
-            onChangeText={setQuantity}
-          />
-          {quantity && unit && (
-            <Text style={styles.quantityHelper}>
-              {quantity} {units.find(u => u.value === unit)?.label}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>État du produit</Text>
-          <View style={styles.optionGroup}>
-            {conditionOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.optionButton,
-                  condition === option.value && styles.optionButtonActive
-                ]}
-                onPress={() => setCondition(option.value)}
-              >
-                <Text style={[
-                  styles.optionText,
-                  condition === option.value && styles.optionTextActive
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.locationHeader}>
-            <Text style={styles.sectionTitle}>Localisation du produit</Text>
-            <TouchableOpacity 
-              style={styles.gpsButton}
-              onPress={getCurrentLocation}
-              disabled={isLoadingLocation}
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>État du produit</Text>
+        <View style={styles.optionGroup}>
+          {conditionOptions.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.optionButton,
+                condition === option.value && styles.optionButtonActive
+              ]}
+              onPress={() => setCondition(option.value)}
             >
-              {isLoadingLocation ? (
-                <Navigation size={16} color={colors.white} />
-              ) : (
-                <MapPin size={16} color={colors.white} />
-              )}
-              <Text style={styles.gpsButtonText}>
-                {isLoadingLocation ? 'Localisation...' : 'GPS'}
+              <Text style={[
+                styles.optionText,
+                condition === option.value && styles.optionTextActive
+              ]}>
+                {option.label}
               </Text>
             </TouchableOpacity>
-          </View>
-          
-          <LocationSelector
-            country={location.country}
-            region={location.region}
-            city={location.city}
-            onLocationChange={handleLocationChange}
-            required
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Date de disponibilité *</Text>
+        <DatePicker
+          value={startDate}
+          onDateChange={setStartDate}
+          placeholder="Sélectionner la date de début"
+          minimumDate={new Date()}
+        />
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, { flex: 1 }]}>
+          <Text style={styles.label}>Date de fin (optionnel)</Text>
+          <DatePicker
+            value={endDate}
+            onDateChange={setEndDate}
+            placeholder="Sélectionner la date de fin"
+            minimumDate={getMinimumEndDate()}
           />
-          
-          {location.coordinates && (
-            <Text style={styles.coordinatesText}>
-              📍 Position GPS: {location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}
-            </Text>
-          )}
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Disponibilité</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Date de disponibilité *</Text>
-            <DatePicker
-              value={startDate}
-              onDateChange={setStartDate}
-              placeholder="Sélectionner la date de début"
-              minimumDate={new Date()}
-            />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Date de fin (optionnel)</Text>
-              <DatePicker
-                value={endDate}
-                onDateChange={setEndDate}
-                placeholder="Sélectionner la date de fin"
-                minimumDate={getMinimumEndDate()}
-              />
-            </View>
-            
-            <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
-              <Text style={styles.label}>Durée (optionnel)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: jusqu'à épuisement"
-                placeholderTextColor={colors.textLight}
-                value={duration}
-                onChangeText={setDuration}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Livraison</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Modes de livraison</Text>
-            <View style={styles.optionGroup}>
-              {deliveryOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.optionButton,
-                    deliveryModes.includes(option.value) && styles.optionButtonActive
-                  ]}
-                  onPress={() => toggleDeliveryMode(option.value)}
-                >
-                  <Truck size={16} color={
-                    deliveryModes.includes(option.value) ? colors.white : colors.textLight
-                  } />
-                  <Text style={[
-                    styles.optionText,
-                    deliveryModes.includes(option.value) && styles.optionTextActive
-                  ]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <TouchableOpacity 
-            style={styles.checkboxRow}
-            onPress={() => setFreeDelivery(!freeDelivery)}
-          >
-            <View style={[styles.checkbox, freeDelivery && styles.checkboxChecked]}>
-              {freeDelivery && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxLabel}>Livraison gratuite</Text>
-          </TouchableOpacity>
-
-          {!freeDelivery && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Frais de livraison (FCFA)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Frais en FCFA"
-                keyboardType="numeric"
-                placeholderTextColor={colors.textLight}
-                value={deliveryFees}
-                onChangeText={setDeliveryFees}
-              />
-            </View>
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
+        
+        <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
+          <Text style={styles.label}>Durée (optionnel)</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Informations complémentaires, conditions, origine..."
-            multiline
-            numberOfLines={4}
+            style={styles.input}
+            placeholder="Ex: jusqu'à épuisement"
             placeholderTextColor={colors.textLight}
-            value={description}
-            onChangeText={setDescription}
+            value={duration}
+            onChangeText={setDuration}
           />
         </View>
+      </View>
 
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          placeholder="Informations complémentaires, conditions, origine..."
+          multiline
+          numberOfLines={4}
+          placeholderTextColor={colors.textLight}
+          value={description}
+          onChangeText={setDescription}
+        />
+      </View>
+
+      <View style={styles.navigationButtons}>
         <TouchableOpacity 
-          style={styles.checkboxRow}
-          onPress={() => setAllowCalls(!allowCalls)}
+          style={styles.backButton}
+          onPress={() => setActiveTab('product')}
         >
-          <View style={[styles.checkbox, allowCalls && styles.checkboxChecked]}>
-            {allowCalls && <Text style={styles.checkmark}>✓</Text>}
-          </View>
-          <Text style={styles.checkboxLabel}>Autoriser les appels téléphoniques</Text>
+          <Text style={styles.backButtonText}>Retour</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.nextButton, (!quantity || !startDate) && styles.nextButtonDisabled]}
+          onPress={() => setActiveTab('location')}
+          disabled={!quantity || !startDate}
+        >
+          <Text style={styles.nextButtonText}>Suivant: Localisation</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
+  const renderLocationTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.locationHeader}>
+        <Text style={styles.sectionTitle}>Localisation du produit</Text>
+        <TouchableOpacity 
+          style={styles.gpsButton}
+          onPress={getCurrentLocation}
+          disabled={isLoadingLocation}
+        >
+          {isLoadingLocation ? (
+            <Navigation size={16} color={colors.white} />
+          ) : (
+            <MapPin size={16} color={colors.white} />
+          )}
+          <Text style={styles.gpsButtonText}>
+            {isLoadingLocation ? 'Localisation...' : 'GPS'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      <LocationSelector
+        country={location.country}
+        region={location.region}
+        city={location.city}
+        onLocationChange={handleLocationChange}
+        required
+      />
+      
+      {location.coordinates && (
+        <Text style={styles.coordinatesText}>
+          📍 Position GPS: {location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}
+        </Text>
+      )}
+
+      <TouchableOpacity 
+        style={styles.checkboxRow}
+        onPress={() => setAllowCalls(!allowCalls)}
+      >
+        <View style={[styles.checkbox, allowCalls && styles.checkboxChecked]}>
+          {allowCalls && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.checkboxLabel}>Autoriser les appels téléphoniques</Text>
+      </TouchableOpacity>
+
+      <View style={styles.navigationButtons}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => setActiveTab('details')}
+        >
+          <Text style={styles.backButtonText}>Retour</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.nextButton, (!location.country || !location.region || !location.city) && styles.nextButtonDisabled]}
+          onPress={() => setActiveTab('delivery')}
+          disabled={!location.country || !location.region || !location.city}
+        >
+          <Text style={styles.nextButtonText}>Suivant: Livraison</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderDeliveryTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>Options de livraison</Text>
+      
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Modes de livraison</Text>
+        <View style={styles.optionGroup}>
+          {deliveryOptions.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.optionButton,
+                deliveryModes.includes(option.value) && styles.optionButtonActive
+              ]}
+              onPress={() => toggleDeliveryMode(option.value)}
+            >
+              <Truck size={16} color={
+                deliveryModes.includes(option.value) ? colors.white : colors.textLight
+              } />
+              <Text style={[
+                styles.optionText,
+                deliveryModes.includes(option.value) && styles.optionTextActive
+              ]}>
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <TouchableOpacity 
+        style={styles.checkboxRow}
+        onPress={() => setFreeDelivery(!freeDelivery)}
+      >
+        <View style={[styles.checkbox, freeDelivery && styles.checkboxChecked]}>
+          {freeDelivery && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.checkboxLabel}>Livraison gratuite</Text>
+      </TouchableOpacity>
+
+      {!freeDelivery && (
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Frais de livraison (FCFA)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Frais en FCFA"
+            keyboardType="numeric"
+            placeholderTextColor={colors.textLight}
+            value={deliveryFees}
+            onChangeText={setDeliveryFees}
+          />
+        </View>
+      )}
+
+      <View style={styles.navigationButtons}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => setActiveTab('location')}
+        >
+          <Text style={styles.backButtonText}>Retour</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.nextButton, deliveryModes.length === 0 && styles.nextButtonDisabled]}
+          onPress={() => setActiveTab('photos')}
+          disabled={deliveryModes.length === 0}
+        >
+          <Text style={styles.nextButtonText}>Suivant: Photos</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderPhotosTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>Photos du produit</Text>
+      <Text style={styles.sectionSubtitle}>
+        Ajoutez des photos claires et de qualité pour attirer plus d'acheteurs
+      </Text>
+      
+      <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
+        <Camera size={24} color={colors.secondary} />
+        <Text style={styles.addImageText}>
+          Ajouter des photos ({images.length}/5)
+        </Text>
+      </TouchableOpacity>
+      
+      {images.length > 0 && (
+        <FlatList
+          data={images}
+          horizontal={false}
+          numColumns={2}
+          renderItem={({ item, index }) => (
+            <View key={index} style={styles.previewContainer}>
+              <Image source={item} style={styles.preview} />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => setImages(images.filter((_, i) => i !== index))}
+              >
+                <X size={16} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+          )}
+          keyExtractor={(_, index) => index.toString()}
+          contentContainerStyle={styles.imagePreviewGrid}
+        />
+      )}
+
+      <View style={styles.navigationButtons}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => setActiveTab('delivery')}
+        >
+          <Text style={styles.backButtonText}>Retour</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity 
           style={[
             styles.submitButton,
-            createProductMutation.isPending && styles.submitButtonDisabled
+            (images.length === 0 || createProductMutation.isPending) && styles.submitButtonDisabled
           ]}
           onPress={handleSubmit}
-          disabled={createProductMutation.isPending}
+          disabled={images.length === 0 || createProductMutation.isPending}
         >
           <Text style={styles.submitButtonText}>
             {createProductMutation.isPending ? 'Publication...' : 'Publier l\'annonce'}
           </Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
+  );
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'product':
+        return renderProductTab();
+      case 'details':
+        return renderDetailsTab();
+      case 'location':
+        return renderLocationTab();
+      case 'delivery':
+        return renderDeliveryTab();
+      case 'photos':
+        return renderPhotosTab();
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Publier une annonce</Text>
+      </View>
+      
+      {renderTabIndicator()}
+      
+      <View style={styles.content}>
+        {renderActiveTab()}
+      </View>
+    </View>
   );
 }
 
@@ -641,6 +864,52 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  header: {
+    backgroundColor: colors.white,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  tabIndicator: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 8,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 4,
+  },
+  activeTabButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+    marginHorizontal: 4,
+  },
+  tabButtonText: {
+    fontSize: 12,
+    color: colors.textLight,
+  },
+  activeTabButtonText: {
+    color: colors.white,
+    fontWeight: '500',
+  },
+  content: {
+    flex: 1,
+  },
+  tabContent: {
+    padding: 16,
+    gap: 16,
   },
   imageSection: {
     padding: 16,
@@ -653,7 +922,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
     borderRadius: 8,
     gap: 8,
     borderWidth: 2,
@@ -665,15 +934,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  imagePreview: {
+  imagePreviewGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 16,
   },
   previewContainer: {
-    marginRight: 8,
+    width: '48%',
+    aspectRatio: 1,
+    position: 'relative',
   },
   preview: {
-    width: 100,
-    height: 100,
+    width: '100%',
+    height: '100%',
     borderRadius: 8,
   },
   removeButton: {
@@ -701,6 +975,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginBottom: 16,
   },
   locationHeader: {
     flexDirection: 'row',
@@ -810,12 +1089,47 @@ const styles = StyleSheet.create({
   optionTextActive: {
     color: colors.white,
   },
-  submitButton: {
-    backgroundColor: colors.primary,
-    padding: 16,
+  navigationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  backButton: {
+    backgroundColor: colors.background,
+    padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flex: 1,
+    marginRight: 8,
+  },
+  backButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  nextButton: {
+    backgroundColor: colors.primary,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 2,
+  },
+  nextButtonDisabled: {
+    backgroundColor: colors.textLight,
+  },
+  nextButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 2,
   },
   submitButtonDisabled: {
     backgroundColor: colors.textLight,
@@ -823,6 +1137,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

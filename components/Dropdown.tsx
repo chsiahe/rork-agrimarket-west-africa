@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
+import { ChevronDown, Check, Search, X } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 
 interface DropdownOption {
@@ -18,21 +18,91 @@ interface DropdownProps {
   disabled?: boolean;
 }
 
-export function Dropdown({ options, value, onSelect, placeholder, disabled = false }: DropdownProps) {
+export function Dropdown({ 
+  options, 
+  value, 
+  onSelect, 
+  placeholder, 
+  searchable = true, 
+  disabled = false 
+}: DropdownProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredOptions, setFilteredOptions] = useState(options);
 
   const selectedOption = options.find(option => option.value === value);
+
+  useEffect(() => {
+    if (searchable && isVisible) {
+      filterOptions(searchQuery);
+    } else {
+      setFilteredOptions(options);
+    }
+  }, [searchQuery, options, isVisible]);
+
+  const filterOptions = (query: string) => {
+    if (!query.trim()) {
+      setFilteredOptions(options);
+      return;
+    }
+
+    const normalizedQuery = query.toLowerCase().trim();
+    const filtered = options.filter(option => 
+      option.label.toLowerCase().includes(normalizedQuery) || 
+      option.value.toLowerCase().includes(normalizedQuery)
+    );
+    
+    setFilteredOptions(filtered);
+  };
 
   const handleSelect = (optionValue: string) => {
     onSelect(optionValue);
     setIsVisible(false);
+    setSearchQuery('');
+  };
+
+  const handleOpen = () => {
+    if (!disabled) {
+      setSearchQuery('');
+      setFilteredOptions(options);
+      setIsVisible(true);
+    }
+  };
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setSearchQuery('');
+  };
+
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim() || !searchable) {
+      return <Text style={styles.optionText}>{text}</Text>;
+    }
+
+    const normalizedQuery = query.toLowerCase();
+    const normalizedText = text.toLowerCase();
+    const index = normalizedText.indexOf(normalizedQuery);
+
+    if (index === -1) {
+      return <Text style={styles.optionText}>{text}</Text>;
+    }
+
+    return (
+      <Text style={styles.optionText}>
+        {text.substring(0, index)}
+        <Text style={styles.highlightedText}>
+          {text.substring(index, index + query.length)}
+        </Text>
+        {text.substring(index + query.length)}
+      </Text>
+    );
   };
 
   return (
     <>
       <TouchableOpacity 
         style={[styles.input, disabled && styles.inputDisabled]} 
-        onPress={() => !disabled && setIsVisible(true)}
+        onPress={handleOpen}
         disabled={disabled}
       >
         <View style={styles.inputContent}>
@@ -55,38 +125,68 @@ export function Dropdown({ options, value, onSelect, placeholder, disabled = fal
           <View style={styles.modalContent}>
             <View style={styles.header}>
               <Text style={styles.title}>Sélectionner une option</Text>
-              <TouchableOpacity onPress={() => setIsVisible(false)}>
+              <TouchableOpacity onPress={handleClose}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
-              {options.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.option,
-                    option.value === value && styles.optionSelected
-                  ]}
-                  onPress={() => handleSelect(option.value)}
-                >
-                  <View style={styles.optionContent}>
-                    {option.icon && (
-                      <Text style={styles.optionIcon}>{option.icon}</Text>
+            {searchable && (
+              <View style={styles.searchContainer}>
+                <Search size={18} color={colors.textLight} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Rechercher..."
+                  placeholderTextColor={colors.textLight}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus={Platform.OS !== 'web'}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <X size={18} color={colors.textLight} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {filteredOptions.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+                {filteredOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.option,
+                      option.value === value && styles.optionSelected
+                    ]}
+                    onPress={() => handleSelect(option.value)}
+                  >
+                    <View style={styles.optionContent}>
+                      {option.icon && (
+                        <Text style={styles.optionIcon}>{option.icon}</Text>
+                      )}
+                      {searchable ? 
+                        highlightMatch(option.label, searchQuery) :
+                        <Text style={[
+                          styles.optionText,
+                          option.value === value && styles.optionTextSelected
+                        ]}>
+                          {option.label}
+                        </Text>
+                      }
+                    </View>
+                    {option.value === value && (
+                      <Check size={20} color={colors.primary} />
                     )}
-                    <Text style={[
-                      styles.optionText,
-                      option.value === value && styles.optionTextSelected
-                    ]}>
-                      {option.label}
-                    </Text>
-                  </View>
-                  {option.value === value && (
-                    <Check size={20} color={colors.primary} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -161,6 +261,21 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     padding: 4,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    padding: 0,
+  },
   optionsList: {
     maxHeight: 300,
   },
@@ -192,5 +307,19 @@ const styles = StyleSheet.create({
   optionTextSelected: {
     color: colors.primary,
     fontWeight: '500',
+  },
+  highlightedText: {
+    backgroundColor: colors.primary + '33',
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  emptyState: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textLight,
+    textAlign: 'center',
   },
 });

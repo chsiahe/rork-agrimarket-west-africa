@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { Search, Filter, MapPin, Eye, Star } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
@@ -112,6 +112,12 @@ export default function SearchScreen() {
     </TouchableOpacity>
   );
 
+  const categoryOptions = categories.map(cat => ({
+    value: cat.name,
+    label: cat.name,
+    icon: cat.icon
+  }));
+
   return (
     <View style={styles.container}>
       <View style={styles.searchHeader}>
@@ -136,6 +142,17 @@ export default function SearchScreen() {
       {showFilters && (
         <View style={styles.filtersSection}>
           <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Catégorie</Text>
+            <Dropdown
+              options={categoryOptions}
+              value={selectedCategory}
+              onSelect={setSelectedCategory}
+              placeholder="Toutes les catégories"
+              searchable={true}
+            />
+          </View>
+          
+          <View style={styles.filterGroup}>
             <Text style={styles.filterLabel}>Localisation</Text>
             
             <View style={styles.locationFilters}>
@@ -146,6 +163,7 @@ export default function SearchScreen() {
                     value={selectedCountry}
                     onSelect={handleCountryChange}
                     placeholder="Pays"
+                    searchable={true}
                   />
                 </View>
               </View>
@@ -158,6 +176,7 @@ export default function SearchScreen() {
                     onSelect={handleRegionChange}
                     placeholder="Région"
                     disabled={!selectedCountry}
+                    searchable={true}
                   />
                 </View>
                 
@@ -168,6 +187,7 @@ export default function SearchScreen() {
                     onSelect={setSelectedCity}
                     placeholder="Ville"
                     disabled={!selectedRegion}
+                    searchable={true}
                   />
                 </View>
               </View>
@@ -187,28 +207,31 @@ export default function SearchScreen() {
 
       <View style={styles.categoriesSection}>
         <Text style={styles.sectionTitle}>Catégories</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.categoryList}>
-            {categories.map((category) => (
-              <TouchableOpacity 
-                key={category.id} 
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.name && styles.categoryChipActive
-                ]}
-                onPress={() => handleCategorySelect(category.name)}
-              >
-                <Text style={styles.categoryEmoji}>{category.icon}</Text>
-                <Text style={[
-                  styles.categoryText,
-                  selectedCategory === category.name && styles.categoryTextActive
-                ]}>
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={categories}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              key={item.id} 
+              style={[
+                styles.categoryChip,
+                selectedCategory === item.name && styles.categoryChipActive
+              ]}
+              onPress={() => handleCategorySelect(item.name)}
+            >
+              <Text style={styles.categoryEmoji}>{item.icon}</Text>
+              <Text style={[
+                styles.categoryText,
+                selectedCategory === item.name && styles.categoryTextActive
+              ]}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.categoryList}
+        />
       </View>
 
       <View style={styles.resultsSection}>
@@ -283,6 +306,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: 16,
   },
   filterGroup: {
     gap: 8,
@@ -327,8 +351,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryList: {
-    flexDirection: 'row',
     gap: 8,
+    paddingRight: 16,
   },
   categoryChip: {
     flexDirection: 'row',

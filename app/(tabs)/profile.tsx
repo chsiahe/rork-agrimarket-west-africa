@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, TextInput, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, TextInput, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { 
   User, 
@@ -22,6 +22,7 @@ import { Product } from '@/types/product';
 import { useAuthStore } from '@/stores/auth-store';
 import { categories } from '@/constants/categories';
 import { getAllCities } from '@/constants/locations';
+import { Dropdown } from '@/components/Dropdown';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - 48) / 2; // 16px padding on each side + 16px gap
@@ -53,9 +54,6 @@ export default function ProfileScreen() {
   const [price, setPrice] = useState('');
   const [unit, setUnit] = useState('kg');
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
   const submitMutation = trpc.marketTrends.submit.useMutation({
     onMutate: () => setSubmissionStatus('submitting'),
@@ -88,6 +86,24 @@ export default function ProfileScreen() {
   };
 
   const cities = getAllCities();
+  const cityOptions = cities.map(city => ({
+    value: city.city,
+    label: `${city.city}, ${city.region}`
+  }));
+
+  const categoryOptions = categories.map(cat => ({
+    value: cat.name,
+    label: cat.name,
+    icon: cat.icon
+  }));
+
+  const unitOptions = [
+    { value: 'kg', label: 'Kilogramme (kg)' },
+    { value: 'tonne', label: 'Tonne' },
+    { value: 'sac', label: 'Sac' },
+    { value: 'pièce', label: 'Pièce' },
+    { value: 'litre', label: 'Litre' }
+  ];
 
   const renderProduct = ({ item }: { item: Product }) => (
     <TouchableOpacity 
@@ -236,10 +252,7 @@ export default function ProfileScreen() {
   );
 
   const renderMarketTab = () => (
-    <ScrollView
-      style={styles.tabContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.tabContent}>
       <Text style={styles.tabTitle}>Tendances du marché</Text>
       <Text style={styles.tabSubtitle}>
         Contribuez aux données de prix du marché dans votre région
@@ -248,80 +261,22 @@ export default function ProfileScreen() {
       <View style={styles.formContainer}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Produit / Catégorie</Text>
-          <TouchableOpacity 
-            style={styles.dropdownInput}
-            onPress={() => {
-              setShowCategoryDropdown(!showCategoryDropdown);
-              setShowCityDropdown(false);
-              setShowUnitDropdown(false);
-            }}
-          >
-            <Text style={styles.dropdownText}>{category}</Text>
-            <View style={styles.dropdownArrow} />
-          </TouchableOpacity>
-          
-          {showCategoryDropdown && (
-            <View style={styles.dropdownList}>
-              {categories.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.dropdownItem,
-                    item.name === category && styles.dropdownItemSelected
-                  ]}
-                  onPress={() => {
-                    setCategory(item.name);
-                    setShowCategoryDropdown(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.dropdownItemText,
-                    item.name === category && styles.dropdownItemTextSelected
-                  ]}>
-                    {item.icon} {item.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <Dropdown
+            options={categoryOptions}
+            value={category}
+            onSelect={setCategory}
+            placeholder="Sélectionner une catégorie"
+            searchable={true}
+          />
           
           <Text style={styles.label}>Ville / Marché</Text>
-          <TouchableOpacity 
-            style={styles.dropdownInput}
-            onPress={() => {
-              setShowCityDropdown(!showCityDropdown);
-              setShowCategoryDropdown(false);
-              setShowUnitDropdown(false);
-            }}
-          >
-            <Text style={styles.dropdownText}>{city}</Text>
-            <View style={styles.dropdownArrow} />
-          </TouchableOpacity>
-          
-          {showCityDropdown && (
-            <View style={styles.dropdownList}>
-              {cities.map((item, index) => (
-                <TouchableOpacity
-                  key={`${item.city}-${index}`}
-                  style={[
-                    styles.dropdownItem,
-                    item.city === city && styles.dropdownItemSelected
-                  ]}
-                  onPress={() => {
-                    setCity(item.city);
-                    setShowCityDropdown(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.dropdownItemText,
-                    item.city === city && styles.dropdownItemTextSelected
-                  ]}>
-                    {item.city}, {item.region}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <Dropdown
+            options={cityOptions}
+            value={city}
+            onSelect={setCity}
+            placeholder="Sélectionner une ville"
+            searchable={true}
+          />
           
           <View style={styles.priceRow}>
             <View style={styles.priceInputContainer}>
@@ -336,42 +291,13 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.unitInputContainer}>
               <Text style={styles.label}>Unité</Text>
-              <TouchableOpacity 
-                style={styles.dropdownInputSmall}
-                onPress={() => {
-                  setShowUnitDropdown(!showUnitDropdown);
-                  setShowCategoryDropdown(false);
-                  setShowCityDropdown(false);
-                }}
-              >
-                <Text style={styles.dropdownText}>{unit}</Text>
-                <View style={styles.dropdownArrow} />
-              </TouchableOpacity>
-              
-              {showUnitDropdown && (
-                <View style={styles.dropdownListSmall}>
-                  {['kg', 'tonne', 'sac', 'pièce', 'litre'].map((item) => (
-                    <TouchableOpacity
-                      key={item}
-                      style={[
-                        styles.dropdownItemSmall,
-                        item === unit && styles.dropdownItemSelected
-                      ]}
-                      onPress={() => {
-                        setUnit(item);
-                        setShowUnitDropdown(false);
-                      }}
-                    >
-                      <Text style={[
-                        styles.dropdownItemText,
-                        item === unit && styles.dropdownItemTextSelected
-                      ]}>
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+              <Dropdown
+                options={unitOptions}
+                value={unit}
+                onSelect={setUnit}
+                placeholder="Unité"
+                searchable={false}
+              />
             </View>
           </View>
           
@@ -405,7 +331,7 @@ export default function ProfileScreen() {
           Soumettez uniquement des prix réels observés sur le marché.
         </Text>
       </View>
-    </ScrollView>
+    </View>
   );
 
   // Use profile data if available, otherwise fallback to user data or defaults
@@ -823,98 +749,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text,
     marginBottom: 4,
-  },
-  dropdownInput: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dropdownInputSmall: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    flex: 1,
-  },
-  dropdownText: {
-    fontSize: 16,
-    color: colors.text,
-    flex: 1,
-  },
-  dropdownArrow: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderLeftColor: 'transparent',
-    borderRightWidth: 5,
-    borderRightColor: 'transparent',
-    borderTopWidth: 5,
-    borderTopColor: colors.textLight,
-  },
-  dropdownList: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    maxHeight: 150,
-    position: 'absolute',
-    width: '100%',
-    zIndex: 10,
-    top: 70,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  dropdownListSmall: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    maxHeight: 150,
-    position: 'absolute',
-    width: '100%',
-    zIndex: 10,
-    top: 70,
-    right: 0,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  dropdownItem: {
-    padding: 12,
-  },
-  dropdownItemSmall: {
-    padding: 12,
-  },
-  dropdownItemSelected: {
-    backgroundColor: colors.primary + '22', // Adding transparency
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  dropdownItemTextSelected: {
-    color: colors.primary,
-    fontWeight: '500',
   },
   priceRow: {
     flexDirection: 'row',
