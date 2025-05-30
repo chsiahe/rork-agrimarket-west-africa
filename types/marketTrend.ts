@@ -1,5 +1,4 @@
 export type MarketTrendSubmission = {
-  id?: string;
   userId: string;
   category: string;
   city: string;
@@ -7,7 +6,12 @@ export type MarketTrendSubmission = {
   country: string;
   price: number;
   unit: string;
-  createdAt?: string;
+  createdAt: string;
+};
+
+export type MarketTrendDataPoint = {
+  date: string;
+  price: number;
 };
 
 export type MarketTrendAggregate = {
@@ -15,9 +19,6 @@ export type MarketTrendAggregate = {
   city: string;
   averagePrice: number;
   unit: string;
-  dataPoints: {
-    date: string;
-    price: number;
-  }[];
+  dataPoints: MarketTrendDataPoint[];
   submissions: number;
 };

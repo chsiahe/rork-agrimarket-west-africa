@@ -25,23 +25,7 @@ const mockUsers = {
     totalPurchases: 12,
     joinedAt: '2024-01-15T10:00:00Z',
     listings: ['1', '2', '3'],
-    reviews: [],
-    bio: 'Agriculteur passionné depuis 15 ans',
-    languages: ['Français', 'Wolof'],
-    socialMedia: {
-      facebook: 'amadou.diallo',
-      whatsapp: '+221771234567'
-    },
-    businessInfo: {
-      companyName: 'Ferme Diallo',
-      registrationNumber: 'SN123456789',
-      description: 'Production de légumes biologiques'
-    },
-    stats: {
-      totalListings: 3,
-      totalSales: 48,
-      rating: 4.8
-    }
+    reviews: []
   },
   '2': {
     id: '2',
@@ -66,22 +50,13 @@ const mockUsers = {
     totalPurchases: 32,
     joinedAt: '2024-02-10T10:00:00Z',
     listings: [],
-    reviews: [],
-    bio: 'Acheteuse de produits frais pour restaurants',
-    languages: ['Français'],
-    socialMedia: {},
-    businessInfo: undefined,
-    stats: {
-      totalListings: 0,
-      totalSales: 0,
-      rating: 4.5
-    }
+    reviews: []
   }
 };
 
 export default publicProcedure
   .input(z.object({ userId: z.string() }))
-  .query(({ input }: { input: { userId: string } }) => {
+  .query(({ input }) => {
     const user = mockUsers[input.userId as keyof typeof mockUsers];
     
     if (!user) {

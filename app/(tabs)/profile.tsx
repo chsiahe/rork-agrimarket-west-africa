@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, FlatList, Dimensions, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, TextInput } from 'react-native';
 import { Image } from 'expo-image';
 import { 
   User, 
@@ -116,375 +116,394 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
+  // Calculate display stats from userProfile or fallback values
+  const displayStats = {
+    totalListings: userProfile?.listings?.length || userListings?.products?.length || 0,
+    totalSales: userProfile?.totalSales || 0,
+    rating: userProfile?.rating || 0
+  };
+
+  const renderListingsTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.tabHeader}>
+        <Text style={styles.tabTitle}>Mes annonces</Text>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => router.push('/(tabs)/post')}
+        >
+          <Text style={styles.addButtonText}>+ Nouvelle annonce</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={userListings?.products || []}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.productsList}
+        showsVerticalScrollIndicator={false}
+        onRefresh={refetchListings}
+        refreshing={false}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Package size={48} color={colors.textLight} />
+            <Text style={styles.emptyText}>Aucune annonce publiée</Text>
+            <Text style={styles.emptySubtext}>
+              Commencez par publier votre première annonce
+            </Text>
+            <TouchableOpacity 
+              style={styles.emptyButton}
+              onPress={() => router.push('/(tabs)/post')}
+            >
+              <Text style={styles.emptyButtonText}>Publier une annonce</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
+    </View>
+  );
+
+  const renderFavoritesTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.tabTitle}>Favoris</Text>
+      <FlatList
+        data={favorites}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.productsList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Heart size={48} color={colors.textLight} />
+            <Text style={styles.emptyText}>Aucun favori</Text>
+            <Text style={styles.emptySubtext}>
+              Les produits que vous aimez apparaîtront ici
+            </Text>
+          </View>
+        }
+      />
+    </View>
+  );
+
+  const renderSettingsTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.tabTitle}>Paramètres</Text>
+      <View style={styles.settingsList}>
+        <TouchableOpacity 
+          style={styles.settingItem}
+          onPress={() => router.push('/profile/edit')}
+        >
+          <Edit size={20} color={colors.textLight} />
+          <Text style={styles.settingText}>Modifier le profil</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.settingItem}>
+          <Settings size={20} color={colors.textLight} />
+          <Text style={styles.settingText}>Préférences</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.settingItem}>
+          <Phone size={20} color={colors.textLight} />
+          <Text style={styles.settingText}>Numéro de téléphone</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.settingItem}>
+          <Mail size={20} color={colors.textLight} />
+          <Text style={styles.settingText}>Adresse email</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.settingDivider} />
+        
+        <TouchableOpacity 
+          style={[styles.settingItem, styles.logoutItem]}
+          onPress={() => {
+            useAuthStore.getState().logout();
+            router.push('/auth/login');
+          }}
+        >
+          <LogOut size={20} color={colors.error} />
+          <Text style={[styles.settingText, styles.logoutText]}>
+            Se déconnecter
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderMarketTab = () => (
+    <FlatList
+      data={[1]} // Just a dummy item to render the content
+      keyExtractor={() => "market-tab"}
+      renderItem={() => (
+        <View style={styles.tabContent}>
+          <Text style={styles.tabTitle}>Tendances du marché</Text>
+          <Text style={styles.tabSubtitle}>
+            Contribuez aux données de prix du marché dans votre région
+          </Text>
+          
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Produit / Catégorie</Text>
+              <View style={styles.dropdownInput}>
+                <Text style={styles.dropdownText}>{category}</Text>
+                <View style={styles.dropdownArrow} />
+              </View>
+              <FlatList
+                data={categories}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownItem,
+                      item.name === category && styles.dropdownItemSelected
+                    ]}
+                    onPress={() => setCategory(item.name)}
+                  >
+                    <Text style={[
+                      styles.dropdownItemText,
+                      item.name === category && styles.dropdownItemTextSelected
+                    ]}>
+                      {item.icon} {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.dropdownList}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+              />
+              
+              <Text style={styles.label}>Ville / Marché</Text>
+              <View style={styles.dropdownInput}>
+                <Text style={styles.dropdownText}>{city}</Text>
+                <View style={styles.dropdownArrow} />
+              </View>
+              <FlatList
+                data={cities}
+                keyExtractor={(item, index) => `${item.city}-${index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownItem,
+                      item.city === city && styles.dropdownItemSelected
+                    ]}
+                    onPress={() => setCity(item.city)}
+                  >
+                    <Text style={[
+                      styles.dropdownItemText,
+                      item.city === city && styles.dropdownItemTextSelected
+                    ]}>
+                      {item.city}, {item.region}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.dropdownList}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+              />
+              
+              <View style={styles.priceRow}>
+                <View style={styles.priceInputContainer}>
+                  <Text style={styles.label}>Prix (FCFA)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={price}
+                    onChangeText={setPrice}
+                    placeholder="Entrez le prix"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={styles.unitInputContainer}>
+                  <Text style={styles.label}>Unité</Text>
+                  <View style={styles.dropdownInputSmall}>
+                    <Text style={styles.dropdownText}>{unit}</Text>
+                    <View style={styles.dropdownArrow} />
+                  </View>
+                  <FlatList
+                    data={['kg', 'tonne', 'sac', 'pièce', 'litre']}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          styles.dropdownItemSmall,
+                          item === unit && styles.dropdownItemSelected
+                        ]}
+                        onPress={() => setUnit(item)}
+                      >
+                        <Text style={[
+                          styles.dropdownItemText,
+                          item === unit && styles.dropdownItemTextSelected
+                        ]}>
+                          {item}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    style={styles.dropdownListSmall}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
+                  />
+                </View>
+              </View>
+              
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  submissionStatus === 'submitting' && styles.submitButtonDisabled
+                ]}
+                onPress={handleSubmitPrice}
+                disabled={submissionStatus === 'submitting'}
+              >
+                <Text style={styles.submitButtonText}>
+                  {submissionStatus === 'submitting' ? 'Envoi...' : 'Soumettre le prix'}
+                </Text>
+              </TouchableOpacity>
+              
+              {submissionStatus === 'success' && (
+                <Text style={styles.successMessage}>
+                  Prix soumis avec succès. Merci de votre contribution!
+                </Text>
+              )}
+              {submissionStatus === 'error' && (
+                <Text style={styles.errorMessage}>
+                  Erreur lors de la soumission. Veuillez vérifier les données et réessayer.
+                </Text>
+              )}
+            </View>
+            
+            <Text style={styles.infoText}>
+              Vos contributions aident les agriculteurs et acheteurs à comprendre les tendances du marché. 
+              Soumettez uniquement des prix réels observés sur le marché.
+            </Text>
+          </View>
+        </View>
+      )}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+
+  // Use profile data if available, otherwise fallback to user data or defaults
+  const displayName = userProfile?.name || user?.name || 'Utilisateur';
+  const displayLocation = userProfile?.location?.city || user?.location?.city || 'Localisation inconnue';
+
+  // Render the appropriate tab content based on activeTab
   const renderTabContent = () => {
     switch (activeTab) {
       case 'listings':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.tabHeader}>
-              <Text style={styles.tabTitle}>Mes annonces</Text>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => router.push('/(tabs)/post')}
-              >
-                <Text style={styles.addButtonText}>+ Nouvelle annonce</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={userListings?.products || []}
-              renderItem={renderProduct}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.row}
-              contentContainerStyle={styles.productsList}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-              onRefresh={refetchListings}
-              refreshing={false}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Package size={48} color={colors.textLight} />
-                  <Text style={styles.emptyText}>Aucune annonce publiée</Text>
-                  <Text style={styles.emptySubtext}>
-                    Commencez par publier votre première annonce
-                  </Text>
-                  <TouchableOpacity 
-                    style={styles.emptyButton}
-                    onPress={() => router.push('/(tabs)/post')}
-                  >
-                    <Text style={styles.emptyButtonText}>Publier une annonce</Text>
-                  </TouchableOpacity>
-                </View>
-              }
-            />
-          </View>
-        );
-      
+        return renderListingsTab();
       case 'favorites':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Favoris</Text>
-            <FlatList
-              data={favorites}
-              renderItem={renderProduct}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.row}
-              contentContainerStyle={styles.productsList}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Heart size={48} color={colors.textLight} />
-                  <Text style={styles.emptyText}>Aucun favori</Text>
-                  <Text style={styles.emptySubtext}>
-                    Les produits que vous aimez apparaîtront ici
-                  </Text>
-                </View>
-              }
-            />
-          </View>
-        );
-      
+        return renderFavoritesTab();
       case 'settings':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Paramètres</Text>
-            <View style={styles.settingsList}>
-              <TouchableOpacity 
-                style={styles.settingItem}
-                onPress={() => router.push('/profile/edit')}
-              >
-                <Edit size={20} color={colors.textLight} />
-                <Text style={styles.settingText}>Modifier le profil</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.settingItem}>
-                <Settings size={20} color={colors.textLight} />
-                <Text style={styles.settingText}>Préférences</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.settingItem}>
-                <Phone size={20} color={colors.textLight} />
-                <Text style={styles.settingText}>Numéro de téléphone</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.settingItem}>
-                <Mail size={20} color={colors.textLight} />
-                <Text style={styles.settingText}>Adresse email</Text>
-              </TouchableOpacity>
-              
-              <View style={styles.settingDivider} />
-              
-              <TouchableOpacity 
-                style={[styles.settingItem, styles.logoutItem]}
-                onPress={() => {
-                  useAuthStore.getState().logout();
-                  router.push('/auth/login');
-                }}
-              >
-                <LogOut size={20} color={colors.error} />
-                <Text style={[styles.settingText, styles.logoutText]}>
-                  Se déconnecter
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-      
+        return renderSettingsTab();
       case 'market':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Tendances du marché</Text>
-            <Text style={styles.tabSubtitle}>
-              Contribuez aux données de prix du marché dans votre région
-            </Text>
-            
-            <View style={styles.formContainer}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Produit / Catégorie</Text>
-                <View style={styles.dropdownInput}>
-                  <Text style={styles.dropdownText}>{category}</Text>
-                  <View style={styles.dropdownArrow} />
-                </View>
-                <FlatList
-                  data={categories}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.dropdownItem,
-                        item.name === category && styles.dropdownItemSelected
-                      ]}
-                      onPress={() => setCategory(item.name)}
-                    >
-                      <Text style={[
-                        styles.dropdownItemText,
-                        item.name === category && styles.dropdownItemTextSelected
-                      ]}>
-                        {item.icon} {item.name}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  style={styles.dropdownList}
-                  showsVerticalScrollIndicator={false}
-                />
-                
-                <Text style={styles.label}>Ville / Marché</Text>
-                <View style={styles.dropdownInput}>
-                  <Text style={styles.dropdownText}>{city}</Text>
-                  <View style={styles.dropdownArrow} />
-                </View>
-                <FlatList
-                  data={cities}
-                  keyExtractor={(item, index) => `${item.city}-${index}`}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.dropdownItem,
-                        item.city === city && styles.dropdownItemSelected
-                      ]}
-                      onPress={() => setCity(item.city)}
-                    >
-                      <Text style={[
-                        styles.dropdownItemText,
-                        item.city === city && styles.dropdownItemTextSelected
-                      ]}>
-                        {item.city}, {item.region}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  style={styles.dropdownList}
-                  showsVerticalScrollIndicator={false}
-                />
-                
-                <View style={styles.priceRow}>
-                  <View style={styles.priceInputContainer}>
-                    <Text style={styles.label}>Prix (FCFA)</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      value={price}
-                      onChangeText={setPrice}
-                      placeholder="Entrez le prix"
-                      keyboardType="numeric"
-                    />
-                  </View>
-                  <View style={styles.unitInputContainer}>
-                    <Text style={styles.label}>Unité</Text>
-                    <View style={styles.dropdownInputSmall}>
-                      <Text style={styles.dropdownText}>{unit}</Text>
-                      <View style={styles.dropdownArrow} />
-                    </View>
-                    <FlatList
-                      data={['kg', 'tonne', 'sac', 'pièce', 'litre']}
-                      keyExtractor={(item) => item}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={[
-                            styles.dropdownItemSmall,
-                            item === unit && styles.dropdownItemSelected
-                          ]}
-                          onPress={() => setUnit(item)}
-                        >
-                          <Text style={[
-                            styles.dropdownItemText,
-                            item === unit && styles.dropdownItemTextSelected
-                          ]}>
-                            {item}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                      style={styles.dropdownListSmall}
-                      showsVerticalScrollIndicator={false}
-                    />
-                  </View>
-                </View>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    submissionStatus === 'submitting' && styles.submitButtonDisabled
-                  ]}
-                  onPress={handleSubmitPrice}
-                  disabled={submissionStatus === 'submitting'}
-                >
-                  <Text style={styles.submitButtonText}>
-                    {submissionStatus === 'submitting' ? 'Envoi...' : 'Soumettre le prix'}
-                  </Text>
-                </TouchableOpacity>
-                
-                {submissionStatus === 'success' && (
-                  <Text style={styles.successMessage}>
-                    Prix soumis avec succès. Merci de votre contribution!
-                  </Text>
-                )}
-                {submissionStatus === 'error' && (
-                  <Text style={styles.errorMessage}>
-                    Erreur lors de la soumission. Veuillez vérifier les données et réessayer.
-                  </Text>
-                )}
-              </View>
-              
-              <Text style={styles.infoText}>
-                Vos contributions aident les agriculteurs et acheteurs à comprendre les tendances du marché. 
-                Soumettez uniquement des prix réels observés sur le marché.
-              </Text>
-            </View>
-          </View>
-        );
-      
+        return renderMarketTab();
       default:
         return null;
     }
   };
 
-  // Use profile data if available, otherwise fallback to user data or defaults
-  const displayName = userProfile?.name || user?.name || 'Utilisateur';
-  const displayLocation = userProfile?.location?.city || user?.location?.city || 'Localisation inconnue';
-  const displayStats = userProfile?.stats || { totalListings: userListings?.products?.length || 0, totalSales: 0, rating: 0 };
-
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.profileHeader}>
-          <View style={styles.profileInfo}>
-            <Image
-              source={userProfile?.avatar || user?.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-            <View style={styles.userInfo}>
-              <View style={styles.nameRow}>
-                <Text style={styles.userName}>{displayName}</Text>
-                {(userProfile?.verified || user?.verified) && (
-                  <View style={styles.verifiedBadge}>
-                    <Star size={16} color={colors.primary} />
-                    <Text style={styles.verifiedText}>Vérifié</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.locationRow}>
-                <MapPin size={14} color={colors.textLight} />
-                <Text style={styles.userLocation}>{displayLocation}</Text>
-              </View>
-              <Text style={styles.userRole}>Producteur agricole</Text>
+      <View style={styles.profileHeader}>
+        <View style={styles.profileInfo}>
+          <Image
+            source={userProfile?.avatar || user?.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"}
+            style={styles.avatar}
+            contentFit="cover"
+          />
+          <View style={styles.userInfo}>
+            <View style={styles.nameRow}>
+              <Text style={styles.userName}>{displayName}</Text>
+              {(userProfile?.verified || user?.verified) && (
+                <View style={styles.verifiedBadge}>
+                  <Star size={16} color={colors.primary} />
+                  <Text style={styles.verifiedText}>Vérifié</Text>
+                </View>
+              )}
             </View>
+            <View style={styles.locationRow}>
+              <MapPin size={14} color={colors.textLight} />
+              <Text style={styles.userLocation}>{displayLocation}</Text>
+            </View>
+            <Text style={styles.userRole}>Producteur agricole</Text>
           </View>
+        </View>
+        
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{displayStats.totalListings}</Text>
+            <Text style={styles.statLabel}>Annonces</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{displayStats.rating.toFixed(1)}</Text>
+            <Text style={styles.statLabel}>Note</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{displayStats.totalSales}</Text>
+            <Text style={styles.statLabel}>Ventes</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.tabsContainer}>
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'listings' && styles.activeTab]}
+            onPress={() => setActiveTab('listings')}
+          >
+            <Package size={20} color={activeTab === 'listings' ? colors.primary : colors.textLight} />
+            <Text style={[
+              styles.tabText,
+              activeTab === 'listings' && styles.activeTabText
+            ]}>
+              Mes annonces
+            </Text>
+          </TouchableOpacity>
           
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{displayStats.totalListings}</Text>
-              <Text style={styles.statLabel}>Annonces</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{displayStats.rating.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>Note</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{displayStats.totalSales}</Text>
-              <Text style={styles.statLabel}>Ventes</Text>
-            </View>
-          </View>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'favorites' && styles.activeTab]}
+            onPress={() => setActiveTab('favorites')}
+          >
+            <Heart size={20} color={activeTab === 'favorites' ? colors.primary : colors.textLight} />
+            <Text style={[
+              styles.tabText,
+              activeTab === 'favorites' && styles.activeTabText
+            ]}>
+              Favoris
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
+            onPress={() => setActiveTab('settings')}
+          >
+            <Settings size={20} color={activeTab === 'settings' ? colors.primary : colors.textLight} />
+            <Text style={[
+              styles.tabText,
+              activeTab === 'settings' && styles.activeTabText
+            ]}>
+              Paramètres
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'market' && styles.activeTab]}
+            onPress={() => setActiveTab('market')}
+          >
+            <TrendingUp size={20} color={activeTab === 'market' ? colors.primary : colors.textLight} />
+            <Text style={[
+              styles.tabText,
+              activeTab === 'market' && styles.activeTabText
+            ]}>
+              Marché
+            </Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <View style={styles.tabsContainer}>
-          <View style={styles.tabs}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'listings' && styles.activeTab]}
-              onPress={() => setActiveTab('listings')}
-            >
-              <Package size={20} color={activeTab === 'listings' ? colors.primary : colors.textLight} />
-              <Text style={[
-                styles.tabText,
-                activeTab === 'listings' && styles.activeTabText
-              ]}>
-                Mes annonces
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'favorites' && styles.activeTab]}
-              onPress={() => setActiveTab('favorites')}
-            >
-              <Heart size={20} color={activeTab === 'favorites' ? colors.primary : colors.textLight} />
-              <Text style={[
-                styles.tabText,
-                activeTab === 'favorites' && styles.activeTabText
-              ]}>
-                Favoris
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
-              onPress={() => setActiveTab('settings')}
-            >
-              <Settings size={20} color={activeTab === 'settings' ? colors.primary : colors.textLight} />
-              <Text style={[
-                styles.tabText,
-                activeTab === 'settings' && styles.activeTabText
-              ]}>
-                Paramètres
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'market' && styles.activeTab]}
-              onPress={() => setActiveTab('market')}
-            >
-              <TrendingUp size={20} color={activeTab === 'market' ? colors.primary : colors.textLight} />
-              <Text style={[
-                styles.tabText,
-                activeTab === 'market' && styles.activeTabText
-              ]}>
-                Marché
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
+      <View style={styles.tabContentContainer}>
         {renderTabContent()}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -606,6 +625,9 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: colors.primary,
     fontWeight: '500',
+  },
+  tabContentContainer: {
+    flex: 1,
   },
   tabContent: {
     flex: 1,
