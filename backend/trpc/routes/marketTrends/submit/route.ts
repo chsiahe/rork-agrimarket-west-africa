@@ -20,6 +20,10 @@ export const submitMarketPrice = protectedProcedure
         throw new Error("Database connection not available");
       }
 
+      if (!ctx.user) {
+        throw new Error("User not authenticated");
+      }
+
       const submission: MarketTrendSubmission = {
         userId: ctx.user.id,
         category: input.category,
