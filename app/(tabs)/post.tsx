@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, FlatList, KeyboardAvoidingView } from 'react-native';
 import { Image } from 'expo-image';
-import { Camera, X, Truck, MapPin, Navigation, Tag, FileText, Calendar, Info, Edit, Image as ImageIcon } from 'lucide-react-native';
+import { Camera as CameraIcon, X, Truck, MapPin, Navigation, Tag, FileText, Calendar, Info, Edit, Image as ImageIcon } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -502,7 +502,7 @@ export default function PostScreen() {
         style={[styles.tabButton, activeTab === 'photos' && styles.activeTabButton]}
         onPress={() => setActiveTab('photos')}
       >
-        <Camera size={20} color={activeTab === 'photos' ? colors.white : colors.textLight} />
+        <CameraIcon size={20} color={activeTab === 'photos' ? colors.white : colors.textLight} />
         <Text style={[styles.tabButtonText, activeTab === 'photos' && styles.activeTabButtonText]}>
           Photos
         </Text>
@@ -889,7 +889,7 @@ export default function PostScreen() {
               style={styles.cameraButton}
               onPress={toggleCameraType}
             >
-              <Camera size={24} color={colors.white} />
+              <CameraIcon size={24} color={colors.white} />
             </TouchableOpacity>
           </View>
         </CameraView>
@@ -913,7 +913,7 @@ export default function PostScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
-          <Camera size={24} color={colors.secondary} />
+          <CameraIcon size={24} color={colors.secondary} />
           <Text style={styles.photoButtonText}>
             Appareil photo
           </Text>
@@ -931,7 +931,11 @@ export default function PostScreen() {
           numColumns={2}
           renderItem={({ item, index }) => (
             <View key={index} style={styles.previewContainer}>
-              <Image source={item} style={styles.preview} />
+              <Image
+                source={item}
+                style={styles.preview}
+                contentFit="cover"
+              />
               <TouchableOpacity
                 style={styles.removeButton}
                 onPress={() => setImages(images.filter((_, i) => i !== index))}

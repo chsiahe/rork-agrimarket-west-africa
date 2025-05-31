@@ -7,6 +7,7 @@ export const submitMarketPrice = protectedProcedure
   .input(
     z.object({
       category: z.string(),
+      productName: z.string().optional(),
       city: z.string(),
       region: z.string(),
       country: z.string(),
@@ -14,7 +15,7 @@ export const submitMarketPrice = protectedProcedure
       unit: z.string(),
     })
   )
-  .mutation(async ({ ctx, input }: { ctx: Context; input: { category: string; city: string; region: string; country: string; price: number; unit: string } }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: { category: string; productName?: string; city: string; region: string; country: string; price: number; unit: string } }) => {
     try {
       if (!ctx.supabase) {
         throw new Error("Database connection not available");
@@ -26,8 +27,9 @@ export const submitMarketPrice = protectedProcedure
       }
 
       const submission: MarketTrendSubmission = {
-        userId: ctx.user.id, // Now TypeScript knows ctx.user is not null
+        userId: ctx.user.id,
         category: input.category,
+        productName: input.productName || input.category, // Use productName if provided, otherwise use category
         city: input.city,
         region: input.region,
         country: input.country,

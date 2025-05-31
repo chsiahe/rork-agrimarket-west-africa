@@ -16,7 +16,7 @@ import {
   User, 
   Mail, 
   Phone, 
-  Camera, 
+  Camera as CameraIcon, 
   Save,
   X,
   Image as ImageIcon
@@ -207,7 +207,7 @@ export default function EditProfileScreen() {
               style={styles.cameraButton}
               onPress={toggleCameraType}
             >
-              <Camera size={24} color={colors.white} />
+              <CameraIcon size={24} color={colors.white} />
             </TouchableOpacity>
           </View>
         </CameraView>
@@ -259,7 +259,7 @@ export default function EditProfileScreen() {
                   style={styles.cameraButton}
                   onPress={handleTakePhoto}
                 >
-                  <Camera size={16} color={colors.white} />
+                  <CameraIcon size={16} color={colors.white} />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.cameraButton, styles.galleryButton]}
@@ -349,7 +349,7 @@ export default function EditProfileScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>URL de l'image (optionnel)</Text>
                 <View style={styles.inputContainer}>
-                  <Camera size={20} color={colors.textLight} style={styles.inputIcon} />
+                  <CameraIcon size={20} color={colors.textLight} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="https://exemple.com/photo.jpg"

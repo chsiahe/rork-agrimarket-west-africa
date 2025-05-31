@@ -3,7 +3,7 @@ export const colors = {
   secondary: '#FF8F00',
   background: '#F5F5F5',
   white: '#FFFFFF',
-  black: '#000000', // Added black color
+  black: '#000000',
   text: '#212121',
   textLight: '#757575',
   border: '#E0E0E0',

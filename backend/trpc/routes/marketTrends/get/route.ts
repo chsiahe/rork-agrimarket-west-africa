@@ -49,29 +49,34 @@ export const getMarketTrends = publicProcedure
         return [];
       }
 
-      // Aggregate data by category and city
+      // Aggregate data by product name and city instead of category
       const aggregatedData: MarketTrendAggregate[] = [];
-      const groupedByCategoryCity: Record<string, any[]> = {};
+      const groupedByProductCity: Record<string, any[]> = {};
 
       data.forEach((entry: any) => {
-        const key = `${entry.category}-${entry.city}`;
-        if (!groupedByCategoryCity[key]) {
-          groupedByCategoryCity[key] = [];
+        // Use product name instead of category for more specific pricing
+        const productName = entry.productName || entry.category;
+        const key = `${productName}-${entry.city}`;
+        if (!groupedByProductCity[key]) {
+          groupedByProductCity[key] = [];
         }
-        groupedByCategoryCity[key].push(entry);
+        groupedByProductCity[key].push(entry);
       });
 
-      Object.entries(groupedByCategoryCity).forEach(([key, entries]) => {
-        const category = key.split('-')[0];
-        const city = key.split('-')[1];
+      Object.entries(groupedByProductCity).forEach(([key, entries]) => {
+        const productParts = key.split('-');
+        const productName = productParts[0];
+        const city = productParts[1];
         const prices = entries.map(e => e.price);
         const averagePrice = prices.reduce((a, b) => a + b, 0) / prices.length;
         const unit = entries[0].unit || 'kg';
+        const category = entries[0].category || 'Non catégorisé';
 
         // Generate data points for chart (group by date)
         const dataPoints = generateDataPoints(entries, input.days);
 
         aggregatedData.push({
+          productName,
           category,
           city,
           averagePrice: Math.round(averagePrice),
@@ -135,6 +140,7 @@ function generateMockTrends(location: string): MarketTrendAggregate[] {
   
   return [
     {
+      productName: 'Mangue Kent',
       category: 'Fruits',
       city: location,
       averagePrice: 800,
@@ -149,6 +155,7 @@ function generateMockTrends(location: string): MarketTrendAggregate[] {
       ]
     },
     {
+      productName: 'Tomate locale',
       category: 'Légumes',
       city: location,
       averagePrice: 500,
@@ -163,6 +170,7 @@ function generateMockTrends(location: string): MarketTrendAggregate[] {
       ]
     },
     {
+      productName: 'Riz local',
       category: 'Céréales',
       city: location,
       averagePrice: 300,

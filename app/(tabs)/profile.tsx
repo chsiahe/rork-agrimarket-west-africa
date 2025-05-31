@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, TextInput, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { 
   User, 
@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { categories } from '@/constants/categories';
 import { getAllCities } from '@/constants/locations';
 import { Dropdown } from '@/components/Dropdown';
+import { FlatList } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - 48) / 2; // 16px padding on each side + 16px gap
@@ -50,6 +51,7 @@ export default function ProfileScreen() {
   
   // State for market price submission
   const [category, setCategory] = useState(categories[0].name);
+  const [productName, setProductName] = useState('');
   const [city, setCity] = useState(user?.location?.city || 'Dakar');
   const [price, setPrice] = useState('');
   const [unit, setUnit] = useState('kg');
@@ -60,6 +62,7 @@ export default function ProfileScreen() {
     onSuccess: () => {
       setSubmissionStatus('success');
       setPrice('');
+      setProductName('');
       setTimeout(() => setSubmissionStatus('idle'), 3000);
     },
     onError: () => {
@@ -77,6 +80,7 @@ export default function ProfileScreen() {
 
     submitMutation.mutate({
       category,
+      productName: productName || undefined,
       city,
       region: user?.location?.region || 'Dakar',
       country: user?.location?.country || 'Sénégal',
@@ -264,7 +268,7 @@ export default function ProfileScreen() {
       
       <View style={styles.formContainer}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Produit / Catégorie</Text>
+          <Text style={styles.label}>Catégorie</Text>
           <Dropdown
             options={categoryOptions}
             value={category}
@@ -272,6 +276,15 @@ export default function ProfileScreen() {
             placeholder="Sélectionner une catégorie"
             searchable={true}
             autoComplete={true}
+          />
+          
+          <Text style={styles.label}>Nom du produit</Text>
+          <TextInput
+            style={styles.textInput}
+            value={productName}
+            onChangeText={setProductName}
+            placeholder="Ex: Mangue Kent, Tomate locale, Riz local"
+            placeholderTextColor={colors.textLight}
           />
           
           <Text style={styles.label}>Ville / Marché</Text>
@@ -293,6 +306,7 @@ export default function ProfileScreen() {
                 onChangeText={setPrice}
                 placeholder="Entrez le prix"
                 keyboardType="numeric"
+                placeholderTextColor={colors.textLight}
               />
             </View>
             <View style={styles.unitInputContainer}>

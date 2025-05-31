@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, RefreshControl, Alert, Platform, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, RefreshControl, Alert, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { categories } from '@/constants/categories';
 import { colors } from '@/constants/colors';
@@ -11,6 +11,7 @@ import * as Location from 'expo-location';
 import { findClosestLocation } from '@/constants/locations';
 import { LineChart } from '@/components/LineChart';
 import { MarketTrendAggregate } from '@/types/marketTrend';
+import { FlatList } from 'react-native';
 
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{
@@ -191,7 +192,7 @@ export default function HomeScreen() {
   const renderTrendItem = ({ item }: { item: MarketTrendAggregate }) => (
     <View style={styles.trendItem}>
       <Text style={styles.trendTitle}>
-        {item.category} à {item.city}
+        {item.productName || item.category}
       </Text>
       <Text style={styles.trendPrice}>
         {item.averagePrice} FCFA/{item.unit}
@@ -358,7 +359,7 @@ export default function HomeScreen() {
           <FlatList
             data={marketTrends}
             renderItem={renderTrendItem}
-            keyExtractor={(item, index) => `${item.category}-${item.city}-${index}`}
+            keyExtractor={(item, index) => `${item.productName || item.category}-${item.city}-${index}`}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.trendsList}
