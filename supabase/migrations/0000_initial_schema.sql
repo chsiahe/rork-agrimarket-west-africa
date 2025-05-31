@@ -142,6 +142,10 @@ create policy "Users can update own profile."
     using ((select auth.uid()) = id)
     with check ((select auth.uid()) = id);
 
+create policy "Authenticated users can insert their own profile."
+    on public.users for insert
+    with check ((select auth.uid()) = id);
+
 -- Operating areas policies
 create policy "Operating areas are viewable by everyone."
     on public.operating_areas for select
