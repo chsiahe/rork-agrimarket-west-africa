@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { 
@@ -24,6 +24,7 @@ import { categories } from '@/constants/categories';
 import { getAllCities } from '@/constants/locations';
 import { Dropdown } from '@/components/Dropdown';
 import { FlatList } from 'react-native';
+import { useTabStore } from '@/stores/tab-store';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - 48) / 2; // 16px padding on each side + 16px gap
@@ -31,8 +32,22 @@ const cardWidth = (screenWidth - 48) / 2; // 16px padding on each side + 16px ga
 type TabType = 'listings' | 'favorites' | 'settings' | 'market';
 
 export default function ProfileScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('listings');
+  // Get the active tab from the store with a default fallback
+  const { activeProfileTab, setActiveProfileTab } = useTabStore();
+  const [activeTab, setActiveTab] = useState<TabType>(activeProfileTab || 'listings');
   const { user } = useAuthStore();
+  
+  // Update local state when store changes
+  useEffect(() => {
+    if (activeProfileTab) {
+      setActiveTab(activeProfileTab);
+    }
+  }, [activeProfileTab]);
+
+  // Update store when local state changes
+  useEffect(() => {
+    setActiveProfileTab(activeTab);
+  }, [activeTab, setActiveProfileTab]);
   
   // Get current user ID, fallback to '1' for demo purposes
   const currentUserId = user?.id || '1';

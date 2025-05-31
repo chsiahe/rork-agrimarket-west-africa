@@ -12,6 +12,7 @@ import { findClosestLocation } from '@/constants/locations';
 import { LineChart } from '@/components/LineChart';
 import { MarketTrendAggregate } from '@/types/marketTrend';
 import { FlatList } from 'react-native';
+import { useTabStore } from '@/stores/tab-store';
 
 export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{
@@ -26,6 +27,7 @@ export default function HomeScreen() {
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const setActiveProfileTab = useTabStore(state => state.setActiveProfileTab);
 
   const { data: products, isLoading, refetch } = trpc.products.list.useQuery({
     limit: 6,
@@ -75,7 +77,7 @@ export default function HomeScreen() {
       if (status !== 'granted') {
         Alert.alert(
           'Permission refusée',
-          'L\'accès à la localisation est nécessaire pour afficher les produits près de vous.',
+          "L'accès à la localisation est nécessaire pour afficher les produits près de vous.",
           [
             { text: 'Continuer sans GPS', style: 'cancel' },
             { text: 'Paramètres', onPress: () => Location.requestForegroundPermissionsAsync() }
@@ -97,7 +99,7 @@ export default function HomeScreen() {
       
     } catch (error) {
       console.log('Location error:', error);
-      Alert.alert('Erreur', 'Impossible d\'obtenir votre localisation');
+      Alert.alert('Erreur', "Impossible d'obtenir votre localisation");
     } finally {
       setIsLoadingLocation(false);
     }
@@ -189,6 +191,13 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [refetch, refetchTrends]);
 
+  const navigateToMarketTab = () => {
+    // Set the active tab in the store before navigation
+    setActiveProfileTab('market');
+    // Navigate to the profile screen
+    router.push('/(tabs)/profile');
+  };
+
   const renderTrendItem = ({ item }: { item: MarketTrendAggregate }) => (
     <View style={styles.trendItem}>
       <Text style={styles.trendTitle}>
@@ -205,10 +214,7 @@ export default function HomeScreen() {
       )}
       <TouchableOpacity 
         style={styles.contributeButton}
-        onPress={() => {
-          setActiveTab('market');
-          router.push('/(tabs)/profile');
-        }}
+        onPress={navigateToMarketTab}
       >
         <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
       </TouchableOpacity>
@@ -371,10 +377,7 @@ export default function HomeScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.contributeButton}
-              onPress={() => {
-                setActiveTab('market');
-                router.push('/(tabs)/profile');
-              }}
+              onPress={navigateToMarketTab}
             >
               <Text style={styles.contributeButtonText}>Contribuer un prix</Text>
             </TouchableOpacity>
@@ -407,12 +410,6 @@ export default function HomeScreen() {
     />
   );
 }
-
-// Assuming this is defined elsewhere in your app
-const setActiveTab = (tab: string) => {
-  // This is a placeholder for navigation or state management to switch tabs
-  console.log(`Switching to ${tab} tab`);
-};
 
 const styles = StyleSheet.create({
   container: {
