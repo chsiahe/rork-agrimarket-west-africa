@@ -1,185 +1,76 @@
 # AgriConnect
 
-<div align="center">
-  <img src="assets/images/icon.png" alt="AgriConnect Logo" width="120" />
-  <h3>Connecter les agriculteurs du Sénégal</h3>
-</div>
+AgriConnect est une plateforme de mise en relation entre agriculteurs et acheteurs en Afrique de l'Ouest.
 
-## 📱 Overview
+## Fonctionnalités
 
-AgriConnect is a mobile marketplace designed to connect farmers, buyers, and agricultural stakeholders across West Africa. The platform enables direct trading of agricultural products, provides market price insights, and facilitates communication between users.
+- 🌾 Publication d'annonces de produits agricoles
+- 💬 Messagerie intégrée entre vendeurs et acheteurs
+- 📊 Suivi des tendances du marché en temps réel
+- 📍 Géolocalisation des produits
+- 🚚 Options de livraison flexibles
+- ⭐ Système de notation des utilisateurs
+- 📱 Interface adaptative (mobile, tablette, web)
 
-Built with React Native and Expo, AgriConnect works on both iOS and Android devices, with web support for broader accessibility.
+## Technologies
 
-## ✨ Features
+- React Native avec Expo
+- TypeScript
+- Supabase pour la base de données
+- tRPC pour l'API
+- Zustand pour la gestion d'état
+- Expo Router pour la navigation
 
-### For Farmers & Sellers
-- **Product Listings**: Post agricultural products with detailed descriptions, pricing, and availability
-- **Flexible Delivery Options**: Offer local pickup or delivery services
-- **Location-Based Visibility**: Increase visibility to nearby buyers
-- **Direct Messaging**: Communicate directly with potential buyers
+## Installation
 
-### For Buyers
-- **Product Discovery**: Browse agricultural products by category or location
-- **Search & Filter**: Find specific products based on various criteria
-- **Market Price Insights**: Access current and historical price trends
-- **Saved Favorites**: Keep track of interesting listings
-
-### Market Insights
-- **Price Trends**: View price trends for agricultural products
-- **Contribute Data**: Submit current market prices to help the community
-- **Regional Comparisons**: Compare prices across different regions
-
-## 🛠️ Tech Stack
-
-- **Frontend**:
-  - React Native / Expo
-  - TypeScript
-  - Expo Router for navigation
-  - Zustand for state management
-  - React Query for data fetching
-
-- **Backend**:
-  - Hono.js (Node.js framework)
-  - tRPC for type-safe API
-  - Supabase for database and authentication
-
-- **Other Tools**:
-  - Expo Camera for image capture
-  - Expo Location for geolocation services
-  - AsyncStorage for local data persistence
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js (v16 or newer)
-- Bun or npm
-- Expo CLI
-- iOS Simulator / Android Emulator (optional for mobile development)
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/agriconnect.git
-   cd agriconnect
-   ```
-
-2. Install dependencies:
-   ```bash
-   bun install
-   # or
-   npm install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Edit the `.env` file with your Supabase credentials and other required variables.
-
-### Running the App
-
-#### Development
-
+1. Cloner le projet
 ```bash
-# Start the development server with tunnel
-bun start
-
-# Start with web support
-bun start-web
-
-# Start with debugging enabled
-bun start-web-dev
+git clone https://github.com/votre-repo/agriconnect.git
+cd agriconnect
 ```
 
-#### Using Expo Go
-
-1. Install the Expo Go app on your iOS or Android device
-2. Scan the QR code displayed in the terminal after running `bun start`
-
-## 📁 Project Structure
-
-```
-agriconnect/
-├── app/                    # Application screens and navigation
-│   ├── (tabs)/             # Tab-based navigation screens
-│   ├── auth/               # Authentication screens
-│   ├── products/           # Product detail screens
-│   ├── chat/               # Chat screens
-│   └── _layout.tsx         # Root layout configuration
-├── assets/                 # Static assets (images, fonts)
-├── backend/                # Backend API code
-│   ├── hono.ts             # Hono.js server setup
-│   └── trpc/               # tRPC router and procedures
-├── components/             # Reusable UI components
-├── constants/              # Application constants
-├── lib/                    # Utility libraries
-├── stores/                 # Zustand stores
-└── types/                  # TypeScript type definitions
+2. Installer les dépendances
+```bash
+npm install
 ```
 
-## 🔑 Key Features Implementation
+3. Configurer les variables d'environnement
+```bash
+cp .env.example .env
+# Remplir les variables dans .env
+```
 
-### Authentication
+4. Lancer le projet
+```bash
+npm start
+```
 
-The app uses Supabase for authentication with JWT tokens. Users can register, login, and manage their profiles.
+## Structure de la base de données
 
-### Product Listings
+Le projet utilise Supabase avec les tables suivantes :
 
-Products are categorized and can be filtered by location, price, and other attributes. Each listing includes:
-- Title and description
-- Price and negotiation status
-- Quantity and unit
-- Location information
-- Delivery options
-- Availability dates
+- users: Profils utilisateurs
+- products: Annonces de produits
+- chats: Conversations entre utilisateurs
+- messages: Messages des conversations
+- market_trends: Tendances des prix du marché
+- operating_areas: Zones d'opération des vendeurs
+- user_ratings: Système de notation
 
-### Geolocation
+## Contribution
 
-The app uses Expo Location to:
-- Determine user's current location
-- Show nearby products
-- Calculate distances between buyers and sellers
+Les contributions sont les bienvenues ! Voici comment contribuer :
 
-### Market Trends
+1. Fork le projet
+2. Créer une branche (`git checkout -b feature/AmazingFeature`)
+3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push sur la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
 
-Users can contribute price data for agricultural products, which is aggregated to show:
-- Current average prices
-- Historical price trends
-- Regional price differences
+## Licence
 
-## 🌐 API Documentation
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
-The backend uses tRPC for type-safe API endpoints:
+## Contact
 
-- **auth**: User authentication and registration
-- **products**: CRUD operations for product listings
-- **users**: User profile management
-- **messages**: Chat functionality
-- **marketTrends**: Market price data
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Contact
-
-For questions or support, please contact [your-email@example.com](mailto:your-email@example.com).
-
----
-
-<div align="center">
-  <p>Built with ❤️ for West African farmers</p>
-</div>
+Pour toute question ou suggestion, n'hésitez pas à ouvrir une issue ou à nous contacter directement.

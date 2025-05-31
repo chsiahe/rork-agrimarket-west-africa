@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 
-type TabState = {
-  activeProfileTab: 'listings' | 'favorites' | 'settings' | 'market';
-  setActiveProfileTab: (tab: 'listings' | 'favorites' | 'settings' | 'market') => void;
-};
+type TabType = 'listings' | 'favorites' | 'settings' | 'market';
+
+interface TabState {
+  activeProfileTab: TabType;
+  setActiveProfileTab: (tab: TabType) => void;
+}
 
 export const useTabStore = create<TabState>((set) => ({
   activeProfileTab: 'listings',

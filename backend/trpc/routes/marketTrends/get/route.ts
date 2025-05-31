@@ -26,7 +26,8 @@ export const getMarketTrends = publicProcedure
       let query = ctx.supabase
         .from('market_trends')
         .select('*')
-        .gte('createdAt', pastDate);
+        .gte('createdAt', pastDate)
+        .not('productName', 'is', null); // Only get entries with product names
 
       if (input.country) {
         query = query.eq('country', input.country);
@@ -49,30 +50,27 @@ export const getMarketTrends = publicProcedure
         return [];
       }
 
-      // Aggregate data by product name and city instead of category
-      const aggregatedData: MarketTrendAggregate[] = [];
+      // Group by product name and city
       const groupedByProductCity: Record<string, any[]> = {};
 
       data.forEach((entry: any) => {
-        // Use product name instead of category for more specific pricing
-        const productName = entry.productName || entry.category;
-        const key = `${productName}-${entry.city}`;
+        const key = `${entry.productName}-${entry.city}`;
         if (!groupedByProductCity[key]) {
           groupedByProductCity[key] = [];
         }
         groupedByProductCity[key].push(entry);
       });
 
+      const aggregatedData: MarketTrendAggregate[] = [];
+
       Object.entries(groupedByProductCity).forEach(([key, entries]) => {
-        const productParts = key.split('-');
-        const productName = productParts[0];
-        const city = productParts[1];
+        const [productName, city] = key.split('-');
         const prices = entries.map(e => e.price);
         const averagePrice = prices.reduce((a, b) => a + b, 0) / prices.length;
         const unit = entries[0].unit || 'kg';
-        const category = entries[0].category || 'Non catégorisé';
+        const category = entries[0].category;
 
-        // Generate data points for chart (group by date)
+        // Generate data points for chart
         const dataPoints = generateDataPoints(entries, input.days);
 
         aggregatedData.push({
@@ -86,7 +84,7 @@ export const getMarketTrends = publicProcedure
         });
       });
 
-      // Sort by number of submissions to show most reliable data
+      // Sort by number of submissions and recency
       return aggregatedData
         .sort((a, b) => b.submissions - a.submissions)
         .slice(0, input.limitCategories);
