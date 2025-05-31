@@ -10,6 +10,7 @@ export default publicProcedure
   .mutation(async ({ input, ctx }) => {
     // Check if we have Supabase client
     if (!ctx.supabase) {
+      console.error('Supabase client not available during login attempt for email:', input.email);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Database connection not available',
@@ -24,17 +25,18 @@ export default publicProcedure
       });
 
       if (authError) {
-        console.error('Auth error:', authError);
+        console.error('Auth error for email:', input.email, 'Error:', authError.message);
         throw new TRPCError({
           code: 'UNAUTHORIZED',
-          message: 'Email ou mot de passe incorrect',
+          message: 'Email ou mot de passe incorrect: ' + authError.message,
         });
       }
 
       if (!authData.user || !authData.session) {
+        console.error('No user or session returned for email:', input.email);
         throw new TRPCError({
           code: 'UNAUTHORIZED',
-          message: 'Email ou mot de passe incorrect',
+          message: 'Email ou mot de passe incorrect - no user data returned',
         });
       }
 
@@ -46,20 +48,21 @@ export default publicProcedure
         .single();
 
       if (userError) {
-        console.error('User data error:', userError);
+        console.error('User data fetch error for user ID:', authData.user.id, 'Error:', userError.message);
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Utilisateur non trouvé',
+          message: 'Utilisateur non trouvé dans la base de données: ' + userError.message,
         });
       }
 
+      console.log('Successful login for email:', input.email);
       // Return user data and session token
       return {
         user: userData,
         token: authData.session.access_token,
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Unexpected login error for email:', input.email, 'Error:', error);
       
       // If it's already a TRPC error, rethrow it
       if (error instanceof TRPCError) {
@@ -69,7 +72,7 @@ export default publicProcedure
       // Otherwise wrap in a TRPC error
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Une erreur est survenue lors de la connexion',
+        message: 'Une erreur inattendue est survenue lors de la connexion: ' + String(error),
       });
     }
   });

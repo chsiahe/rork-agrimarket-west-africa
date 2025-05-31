@@ -24,15 +24,18 @@ export default function LoginScreen() {
     setIsLoading(true);
     
     try {
+      console.log('Attempting login with email:', email);
       const result = await loginMutation.mutateAsync({
         email,
         password,
       });
       
+      console.log('Login successful, user data received');
       login(result.user, result.token);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Erreur de connexion');
+      console.error('Login error:', error);
+      Alert.alert('Erreur de connexion', error.message || 'Une erreur est survenue lors de la connexion. Veuillez vérifier vos identifiants et réessayer.');
     } finally {
       setIsLoading(false);
     }
