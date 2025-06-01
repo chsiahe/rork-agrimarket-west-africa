@@ -76,9 +76,9 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT,
     category_id UUID REFERENCES categories(id),
     condition product_condition DEFAULT 'fresh',
-    price DECIMAL(10,2) CHECK (price > 0),
+    price DECIMAL(10,2),
     negotiable BOOLEAN DEFAULT false,
-    quantity DECIMAL(12,3) CHECK (quantity >= 0),
+    quantity DECIMAL(12,3),
     unit_code TEXT REFERENCES units(code),
     images TEXT[] DEFAULT ARRAY[]::TEXT[],
     country CHAR(2) REFERENCES countries(code),
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS market_trends (
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     category_id UUID REFERENCES categories(id),
     product_name TEXT,
-    price DECIMAL(10,2) CHECK (price > 0),
+    price DECIMAL(10,2),
     unit_code TEXT REFERENCES units(code),
     country CHAR(2) REFERENCES countries(code),
     region_id UUID REFERENCES regions(id),
@@ -156,7 +156,17 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    _role user_role;
 BEGIN
+    -- Safely convert role string to enum
+    BEGIN
+        _role := (NEW.raw_user_meta_data->>'role')::user_role;
+    EXCEPTION WHEN OTHERS THEN
+        _role := 'buyer'::user_role;
+    END;
+
+    -- Insert new user profile
     INSERT INTO public.users (
         id,
         email,
@@ -167,39 +177,54 @@ BEGIN
         country,
         verified,
         metadata,
-        settings
+        settings,
+        created_at,
+        updated_at
     ) VALUES (
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
         COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
         NEW.raw_user_meta_data->>'phone',
-        COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'buyer'),
-        'SN',
+        _role,
+        COALESCE(NEW.raw_user_meta_data->>'country', 'SN'),
         false,
-        COALESCE(NEW.raw_user_meta_data, '{}'::jsonb),
-        '{}'::jsonb
+        NEW.raw_user_meta_data,
+        '{}'::jsonb,
+        NOW(),
+        NOW()
     );
+
     RETURN NEW;
 EXCEPTION
-    WHEN others THEN
-        RAISE WARNING 'Failed to create user profile: %', SQLERRM;
+    WHEN unique_violation THEN
+        -- Handle duplicate email
+        RETURN NEW;
+    WHEN OTHERS THEN
+        -- Log error and continue
+        RAISE WARNING 'Error in handle_new_user: %', SQLERRM;
         RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create triggers
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW
     EXECUTE FUNCTION handle_new_user();
 
+DROP TRIGGER IF EXISTS set_updated_at ON users;
 CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW
     EXECUTE FUNCTION handle_updated_at();
 
--- Enable RLS
+-- Enable RLS on all tables
+ALTER TABLE countries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE regions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE operating_areas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
@@ -208,7 +233,64 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE market_trends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_ratings ENABLE ROW LEVEL SECURITY;
 
--- Create policies
+-- Reference data policies
+CREATE POLICY "Reference data is readable by everyone"
+    ON countries FOR SELECT
+    TO public
+    USING (true);
+
+CREATE POLICY "Reference data is readable by everyone"
+    ON regions FOR SELECT
+    TO public
+    USING (true);
+
+CREATE POLICY "Reference data is readable by everyone"
+    ON categories FOR SELECT
+    TO public
+    USING (true);
+
+CREATE POLICY "Reference data is readable by everyone"
+    ON units FOR SELECT
+    TO public
+    USING (true);
+
+CREATE POLICY "Reference data is modifiable by admins"
+    ON countries FOR ALL
+    TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM users
+        WHERE users.id = auth.uid()
+        AND users.role = 'admin'
+    ));
+
+CREATE POLICY "Reference data is modifiable by admins"
+    ON regions FOR ALL
+    TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM users
+        WHERE users.id = auth.uid()
+        AND users.role = 'admin'
+    ));
+
+CREATE POLICY "Reference data is modifiable by admins"
+    ON categories FOR ALL
+    TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM users
+        WHERE users.id = auth.uid()
+        AND users.role = 'admin'
+    ));
+
+CREATE POLICY "Reference data is modifiable by admins"
+    ON units FOR ALL
+    TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM users
+        WHERE users.id = auth.uid()
+        AND users.role = 'admin'
+    ));
+
+-- Core data policies
 CREATE POLICY "Users can view all profiles"
     ON users FOR SELECT
     TO authenticated
@@ -234,13 +316,29 @@ CREATE POLICY "Users can view own chats"
     TO authenticated
     USING (auth.uid() IN (buyer_id, seller_id));
 
+CREATE POLICY "Users can create chats"
+    ON chats FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = buyer_id);
+
 CREATE POLICY "Users can send messages in own chats"
     ON messages FOR INSERT
     TO authenticated
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM chats
-            WHERE id = chat_id
+            WHERE chats.id = chat_id
+            AND auth.uid() IN (buyer_id, seller_id)
+        )
+    );
+
+CREATE POLICY "Users can view messages in own chats"
+    ON messages FOR SELECT
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM chats
+            WHERE chats.id = chat_id
             AND auth.uid() IN (buyer_id, seller_id)
         )
     );
