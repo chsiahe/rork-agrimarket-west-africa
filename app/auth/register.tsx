@@ -20,7 +20,7 @@ const roleOptions = [
     value: 'buyer' as UserRole,
     label: 'Acheteur',
     icon: ShoppingCart,
-    description: 'J\'achète des produits agricoles'
+    description: "J'achète des produits agricoles"
   },
   {
     value: 'cooperative' as UserRole,
@@ -38,7 +38,8 @@ const roleOptions = [
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     password: '',
@@ -62,7 +63,7 @@ export default function RegisterScreen() {
   const registerMutation = trpc.auth.register.useMutation();
 
   const handleRegister = async () => {
-    if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.region || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.region || !formData.city) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -81,7 +82,8 @@ export default function RegisterScreen() {
     
     try {
       const result = await registerMutation.mutateAsync({
-        name: formData.name,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
@@ -168,9 +170,20 @@ export default function RegisterScreen() {
           <User size={20} color={colors.textLight} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Nom complet"
-            value={formData.name}
-            onChangeText={(value) => updateFormData('name', value)}
+            placeholder="Prénom"
+            value={formData.firstName}
+            onChangeText={(value) => updateFormData('firstName', value)}
+            autoCapitalize="words"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <User size={20} color={colors.textLight} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Nom"
+            value={formData.lastName}
+            onChangeText={(value) => updateFormData('lastName', value)}
             autoCapitalize="words"
           />
         </View>
