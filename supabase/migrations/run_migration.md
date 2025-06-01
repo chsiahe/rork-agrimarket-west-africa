@@ -5,45 +5,28 @@
 If you're experiencing login/registration errors, run this command in your Supabase SQL editor:
 
 ```sql
-\i supabase/migrations/0005_comprehensive_fix.sql
+\i supabase/migrations/0008_safe_schema_update.sql
 ```
 
 ## Migration Files Overview
 
-### 0005_comprehensive_fix.sql ⭐ **RECOMMENDED**
-- Fixes all current authentication and schema issues
-- Safely adds missing columns
-- Creates proper RLS policies
-- Handles user registration flow
+### 0008_safe_schema_update.sql ⭐ **RECOMMENDED**
+- Safely updates the database schema
+- Adds missing columns with existence checks
+- Fixes RLS policies for user login and registration
 - **Use this for most issues**
-
-### 0006_emergency_rls_disable.sql 🚨 **EMERGENCY ONLY**
-- Temporarily disables RLS for immediate access
-- Use only when you need urgent database access
-- Remember to run a proper fix afterward
-
-### 0007_production_ready_fix.sql 🏭 **PRODUCTION**
-- Most comprehensive migration
-- Handles all edge cases
-- Production-ready with full error handling
-- Use for clean, robust setup
 
 ## Step-by-Step Instructions
 
 ### For Current Login/Registration Errors:
 1. Open Supabase Dashboard → SQL Editor
-2. Copy and paste the content of `0005_comprehensive_fix.sql`
+2. Copy and paste the content of `0008_safe_schema_update.sql`
 3. Click "Run"
 4. Test your login/registration
 
-### For Emergency Access:
-1. Run `0006_emergency_rls_disable.sql` first
-2. Fix your immediate issues
-3. Then run `0005_comprehensive_fix.sql` to restore proper security
-
 ### For New Setup or Complete Fix:
-1. Run `0007_production_ready_fix.sql`
-2. This handles everything from scratch
+1. Run `0001_clean_setup.sql` if starting from scratch
+2. Then run `0008_safe_schema_update.sql` to ensure all updates are applied
 
 ## Common Commands
 
@@ -95,8 +78,7 @@ SELECT
 - Run: `SELECT pg_notify('pgrst', 'reload schema');`
 
 ### If you get RLS policy violations:
-- Run `0006_emergency_rls_disable.sql` for immediate access
-- Then run `0005_comprehensive_fix.sql` for proper fix
+- Run `0008_safe_schema_update.sql` to update RLS policies
 
 ### If authentication still fails:
 - Check that the trigger is working: `SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';`
@@ -108,11 +90,4 @@ SELECT
 2. **Test on development** database first
 3. **Run one migration at a time**
 4. **Check the results** after each migration
-5. **Use 0005_comprehensive_fix.sql** for most issues
-6. **Use 0007_production_ready_fix.sql** for new setups
-
-## Migration History
-
-- `0005_comprehensive_fix.sql` - Fixes current auth/schema issues
-- `0006_emergency_rls_disable.sql` - Emergency access (temporary)
-- `0007_production_ready_fix.sql` - Complete production setup
+5. **Use 0008_safe_schema_update.sql** for most issues
