@@ -1,47 +1,43 @@
-# Database Migrations Guide
+# Database Migration Guide
 
-## Migration Files
+## Overview
 
-### 0001_initial_setup.sql
-- Creates the initial database schema with all tables, types, and basic RLS policies
-- Run this first when setting up a new database
+This repository contains the database schema and migrations for the AgriConnect marketplace platform.
 
-### 0002_safe_update.sql
-- **RECOMMENDED**: Safely updates the database schema
-- Adds missing columns with existence checks
-- Fixes RLS policies for user login and registration
-- Run this to fix login/registration errors without resetting the database
+### Key Files
 
-## How to Use
+- `0001_initial_schema.sql`: Complete database schema with tables, triggers, and policies
 
-### For Login/Registration Errors:
-```sql
--- Run this migration to fix auth issues
-\i supabase/migrations/0002_safe_update.sql
-```
+## Running Migrations
 
-### For Complete Reset:
-```sql
--- 1. Reset everything (DESTRUCTIVE)
-\i supabase/migrations/0001_initial_setup.sql
-```
+1. Open Supabase Dashboard
+2. Go to SQL Editor
+3. Copy and paste the content of `0001_initial_schema.sql`
+4. Click "Run"
 
-## Common Issues and Solutions
+## Schema Features
 
-### "Could not find column in schema cache"
-- Run migration 0002_safe_update.sql
-- This refreshes the schema cache
+- User authentication and profiles
+- Product listings and categories
+- Chat system
+- Market trends tracking
+- User ratings
+- Operating areas with PostGIS support
+- Row Level Security (RLS)
+- Automated triggers
 
-### "Row-level security policy violation"
-- Run migration 0002_safe_update.sql to update RLS policies
+## Troubleshooting
 
-### "User profile not found"
-- Migration 0002_safe_update.sql ensures proper user table structure
-- Login route now handles missing profiles gracefully
+If you encounter errors:
+
+1. Check that PostGIS extension is enabled
+2. Verify that all ENUMs are created successfully
+3. Ensure RLS policies are properly set
+4. Verify trigger functions are created before triggers
 
 ## Best Practices
 
-1. Always backup your data before running migrations
-2. Test migrations on a development database first
-3. Run migrations in order (0001 → 0002 for updates)
-4. Use 0002_safe_update.sql for most schema issues
+1. Always backup data before migrations
+2. Test migrations in development first
+3. Monitor trigger functions for errors
+4. Keep track of RLS policies
