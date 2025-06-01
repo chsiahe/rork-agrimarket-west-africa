@@ -5,31 +5,29 @@ import { colors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useAuthStore } from '@/stores/auth-store';
 import { User, Mail, Lock, Phone, Eye, EyeOff, Tractor, ShoppingCart, Building, Truck } from 'lucide-react-native';
-import { UserRole, OperatingArea } from '@/types/auth';
-import { LocationSelector } from '@/components/LocationSelector';
-import { OperatingAreaSelector } from '@/components/OperatingAreaSelector';
+import { RegisterUserRole, OperatingArea } from '@/types/auth';
 
 const roleOptions = [
   {
-    value: 'farmer' as UserRole,
+    value: 'farmer' as RegisterUserRole,
     label: 'Agriculteur',
     icon: Tractor,
     description: 'Je produis et vends des produits agricoles'
   },
   {
-    value: 'buyer' as UserRole,
+    value: 'buyer' as RegisterUserRole,
     label: 'Acheteur',
     icon: ShoppingCart,
     description: "J'achète des produits agricoles"
   },
   {
-    value: 'cooperative' as UserRole,
+    value: 'cooperative' as RegisterUserRole,
     label: 'Coopérative',
     icon: Building,
     description: 'Je représente une coopérative agricole'
   },
   {
-    value: 'distributor' as UserRole,
+    value: 'distributor' as RegisterUserRole,
     label: 'Distributeur',
     icon: Truck,
     description: 'Je distribue des produits agricoles'
@@ -47,7 +45,7 @@ export default function RegisterScreen() {
     country: 'SN',
     region: '',
     city: '',
-    role: 'farmer' as UserRole,
+    role: 'farmer' as RegisterUserRole,
   });
   const [operatingAreas, setOperatingAreas] = useState<OperatingArea>({
     regions: [],
@@ -103,7 +101,7 @@ export default function RegisterScreen() {
     }
   };
 
-  const updateFormData = (field: string, value: string | UserRole) => {
+  const updateFormData = (field: string, value: string | RegisterUserRole) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -116,7 +114,7 @@ export default function RegisterScreen() {
     }));
   };
 
-  const handleRoleSelect = (role: UserRole) => {
+  const handleRoleSelect = (role: RegisterUserRole) => {
     updateFormData('role', role);
     // Show operating areas for farmers and distributors
     setShowOperatingAreas(role === 'farmer' || role === 'distributor');

@@ -9,7 +9,7 @@ export type UserRating = {
 
 export type Location = {
   country: string;
-  region?: string;
+  region: string;
   regionId?: string;
   city: string;
   coordinates?: {
