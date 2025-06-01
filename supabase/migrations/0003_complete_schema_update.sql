@@ -53,12 +53,60 @@ CREATE TABLE IF NOT EXISTS public.units (
 
 -- 4. Types ENUM améliorés
 -- --------------------------------------------------------------------
-CREATE TYPE IF NOT EXISTS public.user_role AS ENUM ('buyer', 'farmer', 'cooperative', 'distributor', 'admin');
-CREATE TYPE IF NOT EXISTS public.product_condition AS ENUM ('new', 'fresh', 'used', 'needs_repair');
-CREATE TYPE IF NOT EXISTS public.delivery_mode AS ENUM ('local', 'regional', 'pickup');
-CREATE TYPE IF NOT EXISTS public.chat_status AS ENUM ('active', 'archived', 'blocked');
-CREATE TYPE IF NOT EXISTS public.message_status AS ENUM ('sent', 'delivered', 'read');
-CREATE TYPE IF NOT EXISTS public.product_status AS ENUM ('active', 'sold', 'archived', 'banned');
+-- Drop types if they exist to avoid conflicts before creating them
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    DROP TYPE public.user_role;
+  END IF;
+END
+$$;
+CREATE TYPE public.user_role AS ENUM ('buyer', 'farmer', 'cooperative', 'distributor', 'admin');
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_condition') THEN
+    DROP TYPE public.product_condition;
+  END IF;
+END
+$$;
+CREATE TYPE public.product_condition AS ENUM ('new', 'fresh', 'used', 'needs_repair');
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'delivery_mode') THEN
+    DROP TYPE public.delivery_mode;
+  END IF;
+END
+$$;
+CREATE TYPE public.delivery_mode AS ENUM ('local', 'regional', 'pickup');
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'chat_status') THEN
+    DROP TYPE public.chat_status;
+  END IF;
+END
+$$;
+CREATE TYPE public.chat_status AS ENUM ('active', 'archived', 'blocked');
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_status') THEN
+    DROP TYPE public.message_status;
+  END IF;
+END
+$$;
+CREATE TYPE public.message_status AS ENUM ('sent', 'delivered', 'read');
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_status') THEN
+    DROP TYPE public.product_status;
+  END IF;
+END
+$$;
+CREATE TYPE public.product_status AS ENUM ('active', 'sold', 'archived', 'banned');
 
 -- 5. Table users
 -- --------------------------------------------------------------------
