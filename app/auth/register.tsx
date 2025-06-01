@@ -1,204 +1,433 @@
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
+import { colors } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useAuthStore } from '@/stores/auth-store';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { User, Mail, Lock, Phone, Eye, EyeOff, Tractor, ShoppingCart, Building, Truck } from 'lucide-react-native';
+import { UserRole, OperatingArea } from '@/types/auth';
+import { LocationSelector } from '@/components/LocationSelector';
+import { OperatingAreaSelector } from '@/components/OperatingAreaSelector';
 
-export default function Register() {
+const roleOptions = [
+  {
+    value: 'farmer' as UserRole,
+    label: 'Agriculteur',
+    icon: Tractor,
+    description: 'Je produis et vends des produits agricoles'
+  },
+  {
+    value: 'buyer' as UserRole,
+    label: 'Acheteur',
+    icon: ShoppingCart,
+    description: 'J\'achète des produits agricoles'
+  },
+  {
+    value: 'cooperative' as UserRole,
+    label: 'Coopérative',
+    icon: Building,
+    description: 'Je représente une coopérative agricole'
+  },
+  {
+    value: 'distributor' as UserRole,
+    label: 'Distributeur',
+    icon: Truck,
+    description: 'Je distribue des produits agricoles'
+  }
+];
+
+export default function RegisterScreen() {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
-    password: '',
-    firstName: '',
-    lastName: '',
     phone: '',
+    password: '',
+    confirmPassword: '',
+    country: 'SN',
+    region: '',
+    city: '',
+    role: 'farmer' as UserRole,
   });
-  const [error, setError] = useState('');
+  const [operatingAreas, setOperatingAreas] = useState<OperatingArea>({
+    regions: [],
+    maxDeliveryDistance: 50,
+    deliveryZones: []
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showOperatingAreas, setShowOperatingAreas] = useState(false);
   
-  const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: (data) => {
-      useAuthStore.getState().login(data.user, data.token);
-      router.replace('/(tabs)');
-    },
-    onError: (err) => {
-      setError(err.message || 'Une erreur est survenue');
-    },
-  });
+  const { login } = useAuthStore();
+  const registerMutation = trpc.auth.register.useMutation();
 
   const handleRegister = async () => {
+    if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.region || !formData.city) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    setIsLoading(true);
+    
     try {
-      setError('');
-
-      if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-        setError('Veuillez remplir tous les champs obligatoires');
-        return;
-      }
-
-      await registerMutation.mutateAsync({
+      const result = await registerMutation.mutateAsync({
+        name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone || undefined,
+        country: formData.country,
+        region: formData.region,
+        city: formData.city,
+        role: formData.role,
+        operatingAreas: showOperatingAreas ? operatingAreas : undefined,
       });
-    } catch (err: any) {
-      // Error is handled in onError callback
+      
+      login(result.user, result.token);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Erreur', error.message || 'Erreur lors de la création du compte');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const updateFormData = (field: string, value: string | UserRole) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLocationChange = (location: { country: string; region: string; city: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      country: location.country,
+      region: location.region,
+      city: location.city
+    }));
+  };
+
+  const handleRoleSelect = (role: UserRole) => {
+    updateFormData('role', role);
+    // Show operating areas for farmers and distributors
+    setShowOperatingAreas(role === 'farmer' || role === 'distributor');
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Créer un compte</Text>
-          <Text style={styles.subtitle}>
-            Rejoignez notre communauté agricole
-          </Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Créer un compte</Text>
+        <Text style={styles.subtitle}>Rejoignez la communauté AgriConnect</Text>
+      </View>
+
+      <View style={styles.form}>
+        <View style={styles.roleSection}>
+          <Text style={styles.roleTitle}>Je suis :</Text>
+          <View style={styles.roleGrid}>
+            {roleOptions.map((option) => {
+              const IconComponent = option.icon;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.roleCard,
+                    formData.role === option.value && styles.roleCardActive
+                  ]}
+                  onPress={() => handleRoleSelect(option.value)}
+                >
+                  <IconComponent 
+                    size={24} 
+                    color={formData.role === option.value ? colors.white : colors.primary} 
+                  />
+                  <Text style={[
+                    styles.roleCardTitle,
+                    formData.role === option.value && styles.roleCardTitleActive
+                  ]}>
+                    {option.label}
+                  </Text>
+                  <Text style={[
+                    styles.roleCardDescription,
+                    formData.role === option.value && styles.roleCardDescriptionActive
+                  ]}>
+                    {option.description}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={styles.input}
-              placeholder="Prénom"
-              value={formData.firstName}
-              onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-              autoCapitalize="words"
-              autoCorrect={false}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Nom"
-              value={formData.lastName}
-              onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-              autoCapitalize="words"
-              autoCorrect={false}
-            />
-          </View>
+        <View style={styles.inputContainer}>
+          <User size={20} color={colors.textLight} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Nom complet"
+            value={formData.name}
+            onChangeText={(value) => updateFormData('name', value)}
+            autoCapitalize="words"
+          />
+        </View>
 
+        <View style={styles.inputContainer}>
+          <Mail size={20} color={colors.textLight} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Email"
             value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            onChangeText={(value) => updateFormData('email', value)}
             keyboardType="email-address"
             autoCapitalize="none"
-            autoCorrect={false}
+            autoComplete="email"
           />
+        </View>
 
+        <View style={styles.inputContainer}>
+          <Phone size={20} color={colors.textLight} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
+            placeholder="Numéro de téléphone"
+            value={formData.phone}
+            onChangeText={(value) => updateFormData('phone', value)}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+          />
+        </View>
+
+        <View style={styles.locationSection}>
+          <LocationSelector
+            country={formData.country}
+            region={formData.region}
+            city={formData.city}
+            onLocationChange={handleLocationChange}
+            label="Votre localisation"
+            required
+          />
+        </View>
+
+        {showOperatingAreas && (
+          <View style={styles.operatingSection}>
+            <OperatingAreaSelector
+              operatingAreas={operatingAreas}
+              onOperatingAreasChange={setOperatingAreas}
+              userCountry={formData.country}
+            />
+          </View>
+        )}
+
+        <View style={styles.inputContainer}>
+          <Lock size={20} color={colors.textLight} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
             placeholder="Mot de passe"
             value={formData.password}
-            onChangeText={(text) => setFormData({ ...formData, password: text })}
-            secureTextEntry
+            onChangeText={(value) => updateFormData('password', value)}
+            secureTextEntry={!showPassword}
+            autoComplete="new-password"
           />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Téléphone (optionnel)"
-            value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
-            keyboardType="phone-pad"
-          />
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
           <TouchableOpacity
-            style={styles.button}
-            onPress={handleRegister}
-            disabled={registerMutation.isLoading}
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
           >
-            {registerMutation.isLoading ? (
-              <ActivityIndicator color="#fff" />
+            {showPassword ? (
+              <EyeOff size={20} color={colors.textLight} />
             ) : (
-              <Text style={styles.buttonText}>Créer un compte</Text>
+              <Eye size={20} color={colors.textLight} />
             )}
           </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Déjà un compte ?</Text>
-            <Link href="/auth/login" style={styles.link}>
-              Se connecter
-            </Link>
-          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        <View style={styles.inputContainer}>
+          <Lock size={20} color={colors.textLight} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            placeholder="Confirmer le mot de passe"
+            value={formData.confirmPassword}
+            onChangeText={(value) => updateFormData('confirmPassword', value)}
+            secureTextEntry={!showConfirmPassword}
+            autoComplete="new-password"
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? (
+              <EyeOff size={20} color={colors.textLight} />
+            ) : (
+              <Eye size={20} color={colors.textLight} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+          onPress={handleRegister}
+          disabled={isLoading}
+        >
+          <Text style={styles.registerButtonText}>
+            {isLoading ? 'Création...' : 'Créer mon compte'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Déjà un compte ? </Text>
+          <TouchableOpacity onPress={() => router.push('/auth/login')}>
+            <Text style={styles.linkText}>Se connecter</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
+    backgroundColor: colors.background,
+    padding: 24,
   },
   header: {
-    marginBottom: 32,
+    marginTop: 60,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textLight,
   },
   form: {
+    flex: 1,
+    paddingBottom: 40,
     gap: 16,
   },
-  inputGroup: {
+  roleSection: {
+    marginBottom: 8,
+  },
+  roleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  roleGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
+  },
+  roleCard: {
+    width: '48%',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    minHeight: 120,
+  },
+  roleCardActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  roleCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  roleCardTitleActive: {
+    color: colors.white,
+  },
+  roleCardDescription: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  roleCardDescriptionActive: {
+    color: colors.white,
+    opacity: 0.9,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
     flex: 1,
-    height: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e1e1e1',
-    paddingHorizontal: 16,
+    height: 50,
     fontSize: 16,
-    backgroundColor: '#fafafa',
+    color: colors.text,
   },
-  button: {
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#22c55e',
+  passwordInput: {
+    paddingRight: 40,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    padding: 4,
+  },
+  locationSection: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  operatingSection: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  registerButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonText: {
-    color: '#fff',
+  registerButtonDisabled: {
+    opacity: 0.6,
+  },
+  registerButtonText: {
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
-  },
-  error: {
-    color: '#ef4444',
-    marginTop: 8,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
     marginTop: 24,
-    gap: 8,
   },
   footerText: {
-    color: '#666',
+    color: colors.textLight,
+    fontSize: 14,
   },
-  link: {
-    color: '#22c55e',
-    fontWeight: '600',
+  linkText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

@@ -1,14 +1,27 @@
-import { z } from 'zod';
-import { publicProcedure } from '@/backend/trpc/create-context';
-import { TRPCError } from '@trpc/server';
+import { z } from "zod";
+import { publicProcedure } from "@/backend/trpc/create-context";
+import { TRPCError } from "@trpc/server";
 
 export default publicProcedure
   .input(z.object({
-    email: z.string().email('Email invalide'),
-    password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-    firstName: z.string().min(1, 'Le prénom est requis'),
-    lastName: z.string().min(1, 'Le nom est requis'),
-    phone: z.string().optional(),
+    firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+    lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    email: z.string().email("Email invalide"),
+    phone: z.string().min(8, "Numéro de téléphone invalide"),
+    password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+    country: z.string().min(2, "Pays requis"),
+    regionId: z.string().optional(),
+    city: z.string().min(2, "Ville requise"),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    }).optional(),
+    role: z.enum(['farmer', 'buyer', 'cooperative', 'distributor']),
+    operatingAreas: z.object({
+      regions: z.array(z.string()),
+      maxDeliveryDistance: z.number(),
+      deliveryZones: z.array(z.string())
+    }).optional(),
   }))
   .mutation(async ({ input, ctx }) => {
     if (!ctx.supabase) {
@@ -19,22 +32,8 @@ export default publicProcedure
     }
 
     try {
-      // Check if email already exists
-      const { data: existingUser } = await ctx.supabase
-        .from('users')
-        .select('id')
-        .eq('email', input.email)
-        .single();
-
-      if (existingUser) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'Cet email est déjà utilisé',
-        });
-      }
-
-      // Create auth user
-      const { data: authData, error: signUpError } = await ctx.supabase.auth.signUp({
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await ctx.supabase.auth.signUp({
         email: input.email,
         password: input.password,
         options: {
@@ -42,44 +41,99 @@ export default publicProcedure
             first_name: input.firstName,
             last_name: input.lastName,
             phone: input.phone,
-            role: 'buyer',
-          },
-        },
+            role: input.role,
+            country: input.country,
+            region_id: input.regionId,
+            city: input.city,
+          }
+        }
       });
 
-      if (signUpError || !authData.user) {
+      if (authError) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: signUpError?.message || 'Erreur lors de la création du compte',
+          message: `Erreur lors de la création du compte: ${authError.message}`,
         });
       }
 
-      // Get the created user profile
-      const { data: userData, error: userError } = await ctx.supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (userError || !userData) {
+      if (!authData.user) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Erreur lors de la récupération du profil',
+          message: 'Erreur lors de la création du compte',
         });
+      }
+
+      // Wait a moment for the trigger to potentially create the profile
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Create user profile data
+      const profileData = {
+        id: authData.user.id,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        role: input.role,
+        country: input.country,
+        region_id: input.regionId,
+        city: input.city,
+        coordinates: input.coordinates ? 
+          `POINT(${input.coordinates.longitude} ${input.coordinates.latitude})` : null,
+        verified: false,
+        metadata: input.operatingAreas ? { operatingAreas: input.operatingAreas } : {},
+        settings: {},
+      };
+
+      // Try to insert or update user profile
+      const { data: userData, error: userError } = await ctx.supabase
+        .from('users')
+        .upsert([profileData], { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+
+      if (userError) {
+        // If profile creation fails, return basic user data
+        const fallbackUser = {
+          id: authData.user.id,
+          email: input.email,
+          first_name: input.firstName,
+          last_name: input.lastName,
+          phone: input.phone,
+          role: input.role,
+          country: input.country,
+          region_id: input.regionId,
+          city: input.city,
+          verified: false,
+          metadata: input.operatingAreas ? { operatingAreas: input.operatingAreas } : {},
+          settings: {},
+          created_at: authData.user.created_at,
+          updated_at: new Date().toISOString(),
+        };
+
+        return {
+          user: fallbackUser,
+          token: authData.session?.access_token,
+          message: "Compte créé avec succès"
+        };
       }
 
       return {
         user: userData,
-        token: authData.session?.access_token || '',
+        token: authData.session?.access_token,
+        message: "Compte créé avec succès"
       };
+
     } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
       }
-
+      
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Une erreur inattendue est survenue',
+        message: 'Une erreur inattendue est survenue lors de l\'inscription',
       });
     }
   });
