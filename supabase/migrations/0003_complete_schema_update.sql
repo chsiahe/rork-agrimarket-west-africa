@@ -4,32 +4,24 @@
 -- Date : 2025-06-01
 -- ====================================================================================
 
--- 1. (Optionnel) Suppression du schéma public pour départ propre
--- --------------------------------------------------------------------
--- Attention : décommentez seulement si vous souhaitez repartir d’un schéma totalement vierge.
--- DROP SCHEMA IF EXISTS public CASCADE;
--- CREATE SCHEMA public;
--- GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
--- GRANT ALL ON SCHEMA public TO postgres, service_role;
--- GRANT USAGE ON SCHEMA public TO anon, authenticated;
-
--- 2. Extensions requises
+-- 1. Extensions requises
 -- --------------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis";
 
--- 3. Tables de référence (normalisation)
+-- 2. Tables de référence (normalisation)
 -- --------------------------------------------------------------------
--- 3.1. Table des pays 
+-- 2.1. Table des pays 
 CREATE TABLE IF NOT EXISTS public.countries (
     code   CHAR(2) PRIMARY KEY,             -- Code ISO 3166-1 alpha-2
     name   TEXT NOT NULL
 );
--- Exemple d’insertion pour le Sénégal (SN). 
--- Pour d’autres pays, insérez selon besoin :
--- INSERT INTO public.countries(code, name) VALUES ('SN', 'Sénégal');
 
--- 3.2. Table des régions (p. ex. régions administratives)
+-- Insertion des données de base pour le Sénégal
+INSERT INTO public.countries(code, name) VALUES ('SN', 'Sénégal')
+ON CONFLICT (code) DO NOTHING;
+
+-- 2.2. Table des régions (p. ex. régions administratives)
 CREATE TABLE IF NOT EXISTS public.regions (
     id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     country   CHAR(2) REFERENCES public.countries(code) ON DELETE CASCADE NOT NULL,
@@ -37,78 +29,118 @@ CREATE TABLE IF NOT EXISTS public.regions (
     UNIQUE(country, name)
 );
 
--- 3.3. Table des catégories de produits
+-- Insertion des régions du Sénégal
+INSERT INTO public.regions(country, name) VALUES 
+('SN', 'Dakar'),
+('SN', 'Thiès'),
+('SN', 'Saint-Louis'),
+('SN', 'Diourbel'),
+('SN', 'Louga'),
+('SN', 'Fatick'),
+('SN', 'Kaolack'),
+('SN', 'Kaffrine'),
+('SN', 'Tambacounda'),
+('SN', 'Kédougou'),
+('SN', 'Kolda'),
+('SN', 'Ziguinchor'),
+('SN', 'Sédhiou'),
+('SN', 'Matam')
+ON CONFLICT (country, name) DO NOTHING;
+
+-- 2.3. Table des catégories de produits
 CREATE TABLE IF NOT EXISTS public.categories (
     id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     label TEXT NOT NULL UNIQUE
 );
 
--- 3.4. Table des unités de mesure
+-- Insertion des catégories de base
+INSERT INTO public.categories(label) VALUES 
+('Céréales'),
+('Légumes'),
+('Fruits'),
+('Légumineuses'),
+('Tubercules'),
+('Épices et condiments'),
+('Matériel agricole'),
+('Semences'),
+('Engrais et pesticides'),
+('Bétail'),
+('Volaille'),
+('Produits laitiers'),
+('Poissons et fruits de mer')
+ON CONFLICT (label) DO NOTHING;
+
+-- 2.4. Table des unités de mesure
 CREATE TABLE IF NOT EXISTS public.units (
     code      TEXT PRIMARY KEY,            -- ex. 'kg', 'l', 'piece'
     label     TEXT NOT NULL
 );
--- Exemple :
--- INSERT INTO public.units(code, label) VALUES ('kg', 'Kilogramme'), ('l', 'Litre'), ('piece', 'Pièce');
 
--- 4. Types ENUM améliorés
+-- Insertion des unités de base
+INSERT INTO public.units(code, label) VALUES 
+('kg', 'Kilogramme'),
+('g', 'Gramme'),
+('t', 'Tonne'),
+('l', 'Litre'),
+('ml', 'Millilitre'),
+('piece', 'Pièce'),
+('sac', 'Sac'),
+('caisse', 'Caisse'),
+('botte', 'Botte'),
+('panier', 'Panier')
+ON CONFLICT (code) DO NOTHING;
+
+-- 3. Types ENUM avec gestion des conflits
 -- --------------------------------------------------------------------
--- Drop types if they exist to avoid conflicts before creating them
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-    DROP TYPE public.user_role;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE public.user_role AS ENUM ('buyer', 'farmer', 'cooperative', 'distributor', 'admin');
   END IF;
 END
 $$;
-CREATE TYPE public.user_role AS ENUM ('buyer', 'farmer', 'cooperative', 'distributor', 'admin');
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_condition') THEN
-    DROP TYPE public.product_condition;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_condition') THEN
+    CREATE TYPE public.product_condition AS ENUM ('new', 'fresh', 'used', 'needs_repair');
   END IF;
 END
 $$;
-CREATE TYPE public.product_condition AS ENUM ('new', 'fresh', 'used', 'needs_repair');
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'delivery_mode') THEN
-    DROP TYPE public.delivery_mode;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'delivery_mode') THEN
+    CREATE TYPE public.delivery_mode AS ENUM ('local', 'regional', 'pickup');
   END IF;
 END
 $$;
-CREATE TYPE public.delivery_mode AS ENUM ('local', 'regional', 'pickup');
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'chat_status') THEN
-    DROP TYPE public.chat_status;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'chat_status') THEN
+    CREATE TYPE public.chat_status AS ENUM ('active', 'archived', 'blocked');
   END IF;
 END
 $$;
-CREATE TYPE public.chat_status AS ENUM ('active', 'archived', 'blocked');
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_status') THEN
-    DROP TYPE public.message_status;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_status') THEN
+    CREATE TYPE public.message_status AS ENUM ('sent', 'delivered', 'read');
   END IF;
 END
 $$;
-CREATE TYPE public.message_status AS ENUM ('sent', 'delivered', 'read');
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_status') THEN
-    DROP TYPE public.product_status;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_status') THEN
+    CREATE TYPE public.product_status AS ENUM ('active', 'sold', 'archived', 'banned');
   END IF;
 END
 $$;
-CREATE TYPE public.product_status AS ENUM ('active', 'sold', 'archived', 'banned');
 
--- 5. Table users
+-- 4. Table users
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.users (
     id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -133,7 +165,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     )
 );
 
--- 6. Table operating_areas
+-- 5. Table operating_areas
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.operating_areas (
     id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -145,7 +177,7 @@ CREATE TABLE IF NOT EXISTS public.operating_areas (
     updated_at             TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
--- 7. Table products
+-- 6. Table products
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.products (
     id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -172,14 +204,14 @@ CREATE TABLE IF NOT EXISTS public.products (
                           OR (free_delivery = FALSE AND delivery_fees >= 0)
                        ),
     allow_calls        BOOLEAN NOT NULL DEFAULT FALSE,
-    start_date         DATE NOT NULL CHECK (start_date >= CURRENT_DATE),
+    start_date         DATE NOT NULL DEFAULT CURRENT_DATE,
     end_date           DATE CHECK (end_date >= start_date),
     views              BIGINT NOT NULL DEFAULT 0,
     status             public.product_status NOT NULL DEFAULT 'active',
     metadata           JSONB NOT NULL DEFAULT '{}'::JSONB
 );
 
--- 8. Table chats
+-- 7. Table chats
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.chats (
     id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -194,7 +226,7 @@ CREATE TABLE IF NOT EXISTS public.chats (
     CONSTRAINT chk_distinct_buyer_seller CHECK (buyer_id <> seller_id)
 );
 
--- 9. Table messages
+-- 8. Table messages
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.messages (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -204,18 +236,10 @@ CREATE TABLE IF NOT EXISTS public.messages (
     content       TEXT NOT NULL,
     status        public.message_status NOT NULL DEFAULT 'sent',
     is_deleted    BOOLEAN NOT NULL DEFAULT FALSE,
-    metadata      JSONB NOT NULL DEFAULT '{}'::JSONB,
-    CONSTRAINT chk_sender_in_chat CHECK (
-        EXISTS (
-            SELECT 1 
-            FROM public.chats c 
-            WHERE c.id = chat_id 
-              AND sender_id IN (c.buyer_id, c.seller_id)
-        )
-    )
+    metadata      JSONB NOT NULL DEFAULT '{}'::JSONB
 );
 
--- 10. Table market_trends
+-- 9. Table market_trends
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.market_trends (
     id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -232,7 +256,7 @@ CREATE TABLE IF NOT EXISTS public.market_trends (
     metadata     JSONB NOT NULL DEFAULT '{}'::JSONB
 );
 
--- 11. Table user_ratings
+-- 10. Table user_ratings
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.user_ratings (
     id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -245,9 +269,9 @@ CREATE TABLE IF NOT EXISTS public.user_ratings (
     CONSTRAINT uniq_rater_rated UNIQUE (rater_id, rated_id)
 );
 
--- 12. Fonctions utilitaires
+-- 11. Fonctions utilitaires
 -- --------------------------------------------------------------------
--- 12.1. Fonction de mise à jour automatique de updated_at en UTC
+-- 11.1. Fonction de mise à jour automatique de updated_at en UTC
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS trigger AS $$
 BEGIN
@@ -256,7 +280,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 12.2. Fonction de calcul de la note moyenne d’un utilisateur
+-- 11.2. Fonction de calcul de la note moyenne d'un utilisateur
 CREATE OR REPLACE FUNCTION public.calculate_user_rating(user_uuid UUID)
 RETURNS NUMERIC AS $$
     SELECT COALESCE(ROUND(AVG(rating)::NUMERIC, 2), 0)
@@ -264,44 +288,51 @@ RETURNS NUMERIC AS $$
     WHERE rated_id = user_uuid;
 $$ LANGUAGE sql STABLE;
 
--- 13. Triggers de mise à jour de updated_at
+-- 12. Triggers de mise à jour de updated_at
 -- --------------------------------------------------------------------
+DROP TRIGGER IF EXISTS trg_users_updated_at ON public.users;
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON public.users
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS trg_operating_areas_updated_at ON public.operating_areas;
 CREATE TRIGGER trg_operating_areas_updated_at
     BEFORE UPDATE ON public.operating_areas
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
 CREATE TRIGGER trg_products_updated_at
     BEFORE UPDATE ON public.products
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS trg_chats_updated_at ON public.chats;
 CREATE TRIGGER trg_chats_updated_at
     BEFORE UPDATE ON public.chats
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS trg_messages_updated_at ON public.messages;
 CREATE TRIGGER trg_messages_updated_at
     BEFORE UPDATE ON public.messages
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS trg_market_trends_updated_at ON public.market_trends;
 CREATE TRIGGER trg_market_trends_updated_at
     BEFORE UPDATE ON public.market_trends
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS trg_user_ratings_updated_at ON public.user_ratings;
 CREATE TRIGGER trg_user_ratings_updated_at
     BEFORE UPDATE ON public.user_ratings
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
--- 14. Trigger de création automatique d’un profil utilisateur à partir de auth.users
+-- 13. Trigger de création automatique d'un profil utilisateur à partir de auth.users
 -- --------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger 
@@ -317,7 +348,7 @@ BEGIN
       COALESCE(NEW.raw_user_meta_data->>'first_name', ''), 
       COALESCE(NEW.raw_user_meta_data->>'last_name', ''), 
       NEW.raw_user_meta_data->>'phone',
-      'buyer',
+      COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'buyer'),
       'SN',
       FALSE,
       COALESCE(NEW.raw_user_meta_data, '{}'::JSONB),
@@ -336,14 +367,15 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_on_auth_user_created ON auth.users;
 CREATE TRIGGER trg_on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
--- 15. Row Level Security (RLS) et policies
+-- 14. Row Level Security (RLS) et policies
 -- --------------------------------------------------------------------
--- 15.1. Activation globale du RLS
+-- 14.1. Activation globale du RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.operating_areas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
@@ -352,287 +384,163 @@ ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.market_trends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_ratings ENABLE ROW LEVEL SECURITY;
 
--- 15.2. Policies pour public.users
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_select_all' AND tablename = 'users') THEN
-    CREATE POLICY users_select_all
-      ON public.users
-      FOR SELECT USING (true);
-  END IF;
-END
-$$;
+-- 14.2. Policies pour public.users
+DROP POLICY IF EXISTS users_select_all ON public.users;
+CREATE POLICY users_select_all
+  ON public.users
+  FOR SELECT USING (true);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_insert_own' AND tablename = 'users') THEN
-    CREATE POLICY users_insert_own
-      ON public.users
-      FOR INSERT WITH CHECK (true);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS users_insert_own ON public.users;
+CREATE POLICY users_insert_own
+  ON public.users
+  FOR INSERT WITH CHECK (true);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_update_own' AND tablename = 'users') THEN
-    CREATE POLICY users_update_own
-      ON public.users
-      FOR UPDATE USING (auth.uid() = id)
-      WITH CHECK (
-        auth.uid() = id
-        AND NEW.role = OLD.role                    -- empêche modification du rôle
-        AND NEW.verified = OLD.verified            -- empêche modification de verified
-      );
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS users_update_own ON public.users;
+CREATE POLICY users_update_own
+  ON public.users
+  FOR UPDATE USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_delete_own' AND tablename = 'users') THEN
-    CREATE POLICY users_delete_own
-      ON public.users
-      FOR DELETE USING (auth.uid() = id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS users_delete_own ON public.users;
+CREATE POLICY users_delete_own
+  ON public.users
+  FOR DELETE USING (auth.uid() = id);
 
--- 15.3. Policies pour public.operating_areas
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'operating_areas_select_all' AND tablename = 'operating_areas') THEN
-    CREATE POLICY operating_areas_select_all
-      ON public.operating_areas
-      FOR SELECT USING (true);
-  END IF;
-END
-$$;
+-- 14.3. Policies pour public.operating_areas
+DROP POLICY IF EXISTS operating_areas_select_all ON public.operating_areas;
+CREATE POLICY operating_areas_select_all
+  ON public.operating_areas
+  FOR SELECT USING (true);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'operating_areas_manage_own' AND tablename = 'operating_areas') THEN
-    CREATE POLICY operating_areas_manage_own
-      ON public.operating_areas
-      FOR ALL USING (auth.uid() = user_id)
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS operating_areas_manage_own ON public.operating_areas;
+CREATE POLICY operating_areas_manage_own
+  ON public.operating_areas
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
--- 15.4. Policies pour public.products
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'products_select_active' AND tablename = 'products') THEN
-    CREATE POLICY products_select_active
-      ON public.products
-      FOR SELECT USING (status = 'active');
-  END IF;
-END
-$$;
+-- 14.4. Policies pour public.products
+DROP POLICY IF EXISTS products_select_active ON public.products;
+CREATE POLICY products_select_active
+  ON public.products
+  FOR SELECT USING (status = 'active');
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'products_manage_own' AND tablename = 'products') THEN
-    CREATE POLICY products_manage_own
-      ON public.products
-      FOR ALL USING (auth.uid() = seller_id)
-      WITH CHECK (auth.uid() = seller_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS products_manage_own ON public.products;
+CREATE POLICY products_manage_own
+  ON public.products
+  FOR ALL USING (auth.uid() = seller_id)
+  WITH CHECK (auth.uid() = seller_id);
 
--- 15.5. Policies pour public.chats
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_select_own' AND tablename = 'chats') THEN
-    CREATE POLICY chats_select_own
-      ON public.chats
-      FOR SELECT USING (auth.uid() IN (buyer_id, seller_id));
-  END IF;
-END
-$$;
+-- 14.5. Policies pour public.chats
+DROP POLICY IF EXISTS chats_select_own ON public.chats;
+CREATE POLICY chats_select_own
+  ON public.chats
+  FOR SELECT USING (auth.uid() IN (buyer_id, seller_id));
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_insert_as_buyer' AND tablename = 'chats') THEN
-    CREATE POLICY chats_insert_as_buyer
-      ON public.chats
-      FOR INSERT WITH CHECK (auth.uid() = buyer_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS chats_insert_as_buyer ON public.chats;
+CREATE POLICY chats_insert_as_buyer
+  ON public.chats
+  FOR INSERT WITH CHECK (auth.uid() = buyer_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_update_own' AND tablename = 'chats') THEN
-    CREATE POLICY chats_update_own
-      ON public.chats
-      FOR UPDATE USING (auth.uid() IN (buyer_id, seller_id))
-      WITH CHECK (auth.uid() IN (buyer_id, seller_id));
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS chats_update_own ON public.chats;
+CREATE POLICY chats_update_own
+  ON public.chats
+  FOR UPDATE USING (auth.uid() IN (buyer_id, seller_id))
+  WITH CHECK (auth.uid() IN (buyer_id, seller_id));
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_delete_own' AND tablename = 'chats') THEN
-    CREATE POLICY chats_delete_own
-      ON public.chats
-      FOR DELETE USING (auth.uid() IN (buyer_id, seller_id));
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS chats_delete_own ON public.chats;
+CREATE POLICY chats_delete_own
+  ON public.chats
+  FOR DELETE USING (auth.uid() IN (buyer_id, seller_id));
 
--- 15.6. Policies pour public.messages
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_select_own' AND tablename = 'messages') THEN
-    CREATE POLICY messages_select_own
-      ON public.messages
-      FOR SELECT USING (
-        EXISTS (
-          SELECT 1 FROM public.chats c
-          WHERE c.id = public.messages.chat_id
-            AND auth.uid() IN (c.buyer_id, c.seller_id)
-        )
-      );
-  END IF;
-END
-$$;
+-- 14.6. Policies pour public.messages
+DROP POLICY IF EXISTS messages_select_own ON public.messages;
+CREATE POLICY messages_select_own
+  ON public.messages
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.chats c
+      WHERE c.id = public.messages.chat_id
+        AND auth.uid() IN (c.buyer_id, c.seller_id)
+    )
+  );
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_insert_own' AND tablename = 'messages') THEN
-    CREATE POLICY messages_insert_own
-      ON public.messages
-      FOR INSERT WITH CHECK (
-        EXISTS (
-          SELECT 1 FROM public.chats c
-          WHERE c.id = chat_id
-            AND auth.uid() IN (c.buyer_id, c.seller_id)
-        )
-        AND auth.uid() = sender_id
-      );
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS messages_insert_own ON public.messages;
+CREATE POLICY messages_insert_own
+  ON public.messages
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.chats c
+      WHERE c.id = chat_id
+        AND auth.uid() IN (c.buyer_id, c.seller_id)
+    )
+    AND auth.uid() = sender_id
+  );
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_update_own' AND tablename = 'messages') THEN
-    CREATE POLICY messages_update_own
-      ON public.messages
-      FOR UPDATE USING (
-        auth.uid() = sender_id
-        AND NOT is_deleted
-      ) WITH CHECK (
-        auth.uid() = sender_id
-        AND NEW.is_deleted = FALSE
-      );
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS messages_update_own ON public.messages;
+CREATE POLICY messages_update_own
+  ON public.messages
+  FOR UPDATE USING (
+    auth.uid() = sender_id
+    AND NOT is_deleted
+  ) WITH CHECK (
+    auth.uid() = sender_id
+    AND NEW.is_deleted = FALSE
+  );
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_delete_own' AND tablename = 'messages') THEN
-    CREATE POLICY messages_delete_own
-      ON public.messages
-      FOR DELETE USING (
-        auth.uid() = sender_id
-      );
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS messages_delete_own ON public.messages;
+CREATE POLICY messages_delete_own
+  ON public.messages
+  FOR DELETE USING (
+    auth.uid() = sender_id
+  );
 
--- 15.7. Policies pour public.market_trends
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_select_all' AND tablename = 'market_trends') THEN
-    CREATE POLICY market_trends_select_all
-      ON public.market_trends
-      FOR SELECT USING (true);
-  END IF;
-END
-$$;
+-- 14.7. Policies pour public.market_trends
+DROP POLICY IF EXISTS market_trends_select_all ON public.market_trends;
+CREATE POLICY market_trends_select_all
+  ON public.market_trends
+  FOR SELECT USING (true);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_insert_authenticated' AND tablename = 'market_trends') THEN
-    CREATE POLICY market_trends_insert_authenticated
-      ON public.market_trends
-      FOR INSERT WITH CHECK (auth.uid() = user_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS market_trends_insert_authenticated ON public.market_trends;
+CREATE POLICY market_trends_insert_authenticated
+  ON public.market_trends
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_update_own' AND tablename = 'market_trends') THEN
-    CREATE POLICY market_trends_update_own
-      ON public.market_trends
-      FOR UPDATE USING (auth.uid() = user_id)
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS market_trends_update_own ON public.market_trends;
+CREATE POLICY market_trends_update_own
+  ON public.market_trends
+  FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_delete_own' AND tablename = 'market_trends') THEN
-    CREATE POLICY market_trends_delete_own
-      ON public.market_trends
-      FOR DELETE USING (auth.uid() = user_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS market_trends_delete_own ON public.market_trends;
+CREATE POLICY market_trends_delete_own
+  ON public.market_trends
+  FOR DELETE USING (auth.uid() = user_id);
 
--- 15.8. Policies pour public.user_ratings
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_select_all' AND tablename = 'user_ratings') THEN
-    CREATE POLICY user_ratings_select_all
-      ON public.user_ratings
-      FOR SELECT USING (true);
-  END IF;
-END
-$$;
+-- 14.8. Policies pour public.user_ratings
+DROP POLICY IF EXISTS user_ratings_select_all ON public.user_ratings;
+CREATE POLICY user_ratings_select_all
+  ON public.user_ratings
+  FOR SELECT USING (true);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_insert_authenticated' AND tablename = 'user_ratings') THEN
-    CREATE POLICY user_ratings_insert_authenticated
-      ON public.user_ratings
-      FOR INSERT WITH CHECK (auth.uid() = rater_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS user_ratings_insert_authenticated ON public.user_ratings;
+CREATE POLICY user_ratings_insert_authenticated
+  ON public.user_ratings
+  FOR INSERT WITH CHECK (auth.uid() = rater_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_update_own' AND tablename = 'user_ratings') THEN
-    CREATE POLICY user_ratings_update_own
-      ON public.user_ratings
-      FOR UPDATE USING (auth.uid() = rater_id)
-      WITH CHECK (auth.uid() = rater_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS user_ratings_update_own ON public.user_ratings;
+CREATE POLICY user_ratings_update_own
+  ON public.user_ratings
+  FOR UPDATE USING (auth.uid() = rater_id)
+  WITH CHECK (auth.uid() = rater_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_delete_own' AND tablename = 'user_ratings') THEN
-    CREATE POLICY user_ratings_delete_own
-      ON public.user_ratings
-      FOR DELETE USING (auth.uid() = rater_id);
-  END IF;
-END
-$$;
+DROP POLICY IF EXISTS user_ratings_delete_own ON public.user_ratings;
+CREATE POLICY user_ratings_delete_own
+  ON public.user_ratings
+  FOR DELETE USING (auth.uid() = rater_id);
 
--- 16. Indexation avancée et performances
+-- 15. Indexation avancée et performances
 -- --------------------------------------------------------------------
--- 16.1. Index pour users
+-- 15.1. Index pour users
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users (email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users (role);
 CREATE INDEX IF NOT EXISTS idx_users_country ON public.users (country);
@@ -645,12 +553,12 @@ CREATE INDEX IF NOT EXISTS idx_users_metadata_gin
   ON public.users USING GIN (metadata);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON public.users (created_at);
 
--- 16.2. Index pour operating_areas
+-- 15.2. Index pour operating_areas
 CREATE INDEX IF NOT EXISTS idx_operating_areas_user_id ON public.operating_areas (user_id);
 CREATE INDEX IF NOT EXISTS idx_operating_areas_delivery_zones 
   ON public.operating_areas USING GIST (delivery_zones);
 
--- 16.3. Index pour products
+-- 15.3. Index pour products
 CREATE INDEX IF NOT EXISTS idx_products_seller_id ON public.products (seller_id);
 CREATE INDEX IF NOT EXISTS idx_products_category_id ON public.products (category_id);
 CREATE INDEX IF NOT EXISTS idx_products_status_created_at 
@@ -660,32 +568,32 @@ CREATE INDEX IF NOT EXISTS idx_products_coordinates
 CREATE INDEX IF NOT EXISTS idx_products_metadata_gin 
   ON public.products USING GIN (metadata);
 
--- 16.4. Index pour chats
+-- 15.4. Index pour chats
 CREATE INDEX IF NOT EXISTS idx_chats_product_id ON public.chats (product_id);
 CREATE INDEX IF NOT EXISTS idx_chats_buyer_id ON public.chats (buyer_id);
 CREATE INDEX IF NOT EXISTS idx_chats_seller_id ON public.chats (seller_id);
 CREATE INDEX IF NOT EXISTS idx_chats_active_last_message_at 
   ON public.chats (last_message_at) WHERE status = 'active';
 
--- 16.5. Index pour messages
+-- 15.5. Index pour messages
 CREATE INDEX IF NOT EXISTS idx_messages_chat_id_created_at 
   ON public.messages (chat_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON public.messages (sender_id);
 
--- 16.6. Index pour market_trends
+-- 15.6. Index pour market_trends
 CREATE INDEX IF NOT EXISTS idx_market_trends_category_region_country 
   ON public.market_trends (category_id, country, region_id);
 CREATE INDEX IF NOT EXISTS idx_market_trends_coordinates 
   ON public.market_trends USING GIST (coordinates);
 CREATE INDEX IF NOT EXISTS idx_market_trends_created_at ON public.market_trends (created_at);
 
--- 16.7. Index pour user_ratings
+-- 15.7. Index pour user_ratings
 CREATE INDEX IF NOT EXISTS idx_user_ratings_rated_id_created_at 
   ON public.user_ratings (rated_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_user_ratings_metadata_gin 
   ON public.user_ratings USING GIN (metadata);
 
--- 17. Grant permissions
+-- 16. Grant permissions
 -- --------------------------------------------------------------------
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL   ON ALL TABLES    IN SCHEMA public TO authenticated;
@@ -693,15 +601,15 @@ GRANT SELECT ON ALL TABLES   IN SCHEMA public TO anon;
 GRANT ALL   ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon;
 
--- 18. Forcer le rafraîchissement du cache de schéma (pour PostgREST/Supabase)
+-- 17. Forcer le rafraîchissement du cache de schéma (pour PostgREST/Supabase)
 -- --------------------------------------------------------------------
 SELECT pg_notify('pgrst', 'reload schema');
 
--- 19. Optimisation finale
+-- 18. Optimisation finale
 -- --------------------------------------------------------------------
 VACUUM ANALYZE;
 
--- 20. Messages de fin
+-- 19. Messages de fin
 -- --------------------------------------------------------------------
 DO $$
 BEGIN
