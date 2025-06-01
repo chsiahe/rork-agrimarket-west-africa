@@ -50,7 +50,7 @@ export function LocationSelector({
   useEffect(() => {
     onLocationChange({
       country: selectedCountry,
-      regionId: selectedRegionId,
+      regionId: selectedRegionId || '',
       city: selectedCity
     });
   }, [selectedCountry, selectedRegionId, selectedCity]);
@@ -61,7 +61,7 @@ export function LocationSelector({
   }));
 
   const regionOptions = regions.map(r => ({
-    value: r.id,
+    value: r.name,
     label: r.name
   }));
 

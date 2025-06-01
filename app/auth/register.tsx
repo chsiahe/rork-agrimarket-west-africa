@@ -63,7 +63,7 @@ export default function RegisterScreen() {
   const registerMutation = trpc.auth.register.useMutation();
 
   const handleRegister = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.regionId || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.city) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -88,7 +88,7 @@ export default function RegisterScreen() {
         phone: formData.phone,
         password: formData.password,
         country: formData.country,
-        regionId: formData.regionId,
+        regionId: formData.regionId || '',
         city: formData.city,
         role: formData.role,
         operatingAreas: showOperatingAreas ? operatingAreas : undefined,
