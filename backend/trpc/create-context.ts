@@ -13,8 +13,8 @@ const SUPABASE_CONFIG = {
 
 // JWT configuration
 const JWT_CONFIG = {
-  secret: process.env.JWT_SECRET || 'a5scdS0p1cHr3yXELbbTjmEb9ffifqukxevuOjlZV7zzjIiUoUmU8FYQChjRSqrxkW1nbatQukuoso9ok6fIXg==',
-  expiresIn: process.env.JWT_EXPIRES_IN || '3600s',
+  secret: process.env.JWT_SECRET || '',
+  expiresIn: process.env.JWT_EXPIRES_IN || '',
 };
 
 // Mock user data for context (in real app, decode JWT token and fetch from Supabase)
