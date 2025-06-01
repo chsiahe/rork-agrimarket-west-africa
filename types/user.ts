@@ -9,7 +9,8 @@ export type UserRating = {
 
 export type Location = {
   country: string;
-  region: string;
+  region?: string;
+  regionId?: string;
   city: string;
   coordinates?: {
     latitude: number;
@@ -25,7 +26,9 @@ export type OperatingArea = {
 
 export type User = {
   id: string;
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   avatar?: string;
   phone?: string;
   email: string;

@@ -6,16 +6,18 @@ import type { Context } from "../../../create-context";
 export const submitMarketPrice = protectedProcedure
   .input(
     z.object({
-      category: z.string(),
+      categoryId: z.string(),
+      category: z.string().optional(),
       productName: z.string().optional(),
       city: z.string(),
-      region: z.string(),
+      regionId: z.string().optional(),
+      region: z.string().optional(),
       country: z.string(),
       price: z.number().positive(),
-      unit: z.string(),
+      unitCode: z.string(),
     })
   )
-  .mutation(async ({ ctx, input }: { ctx: Context; input: { category: string; productName?: string; city: string; region: string; country: string; price: number; unit: string } }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: { categoryId: string; category?: string; productName?: string; city: string; regionId?: string; region?: string; country: string; price: number; unitCode: string } }) => {
     try {
       if (!ctx.supabase) {
         throw new Error("Database connection not available");
@@ -28,19 +30,31 @@ export const submitMarketPrice = protectedProcedure
 
       const submission: MarketTrendSubmission = {
         userId: ctx.user.id,
-        category: input.category,
-        productName: input.productName || input.category, // Use productName if provided, otherwise use category
+        categoryId: input.categoryId,
+        category: input.category || '',
+        productName: input.productName || input.category || '', // Use productName if provided, otherwise use category
         city: input.city,
-        region: input.region,
+        regionId: input.regionId,
+        region: input.region || '',
         country: input.country,
         price: input.price,
-        unit: input.unit,
+        unitCode: input.unitCode,
         createdAt: new Date().toISOString(),
       };
 
       const { data, error } = await ctx.supabase
         .from('market_trends')
-        .insert([submission])
+        .insert([{
+          user_id: submission.userId,
+          category_id: submission.categoryId,
+          product_name: submission.productName,
+          price: submission.price,
+          unit_code: submission.unitCode,
+          country: submission.country,
+          region_id: submission.regionId,
+          city: submission.city,
+          created_at: submission.createdAt,
+        }])
         .select();
 
       if (error) {

@@ -1,26 +1,37 @@
-export interface MarketTrendDataPoint {
-  date: string;
-  price: number;
-}
-
-export interface MarketTrendAggregate {
-  productName?: string; // Added product name for specific product pricing
-  category: string;
-  city: string;
-  averagePrice: number;
-  unit: string;
-  dataPoints: MarketTrendDataPoint[];
-  submissions: number;
-}
-
-export interface MarketTrendSubmission {
+export type MarketTrendSubmission = {
   userId: string;
-  productName?: string; // Added product name for specific product pricing
-  category: string;
+  categoryId: string;
+  category?: string;
+  productName: string;
   city: string;
-  region: string;
+  regionId?: string;
+  region?: string;
   country: string;
   price: number;
-  unit: string;
+  unitCode: string;
   createdAt: string;
-}
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+export type MarketTrend = {
+  id: string;
+  userId?: string;
+  categoryId: string;
+  category?: string;
+  productName?: string;
+  price: number;
+  unitCode: string;
+  country: string;
+  regionId?: string;
+  region?: string;
+  city: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+  createdAt: string;
+  metadata?: Record<string, any>;
+};

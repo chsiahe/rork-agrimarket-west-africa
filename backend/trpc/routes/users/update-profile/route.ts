@@ -7,13 +7,14 @@ import { User } from "@/types/user";
 let mockUsers: Record<string, User> = {
   '1': {
     id: '1',
-    name: 'Amadou Diallo',
+    firstName: 'Amadou',
+    lastName: 'Diallo',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
     phone: '+221 77 123 45 67',
     email: 'amadou.diallo@example.com',
     role: 'farmer',
     location: {
-      country: 'Sénégal',
+      country: 'SN',
       region: 'Dakar',
       city: 'Dakar',
       coordinates: {
@@ -48,13 +49,14 @@ let mockUsers: Record<string, User> = {
   },
   '2': {
     id: '2',
-    name: 'Fatou Sow',
+    firstName: 'Fatou',
+    lastName: 'Sow',
     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786',
     phone: '+221 77 987 65 43',
     email: 'fatou.sow@example.com',
     role: 'buyer',
     location: {
-      country: 'Sénégal',
+      country: 'SN',
       region: 'Thiès',
       city: 'Thiès',
       coordinates: {
@@ -79,11 +81,13 @@ let mockUsers: Record<string, User> = {
 export default publicProcedure
   .input(z.object({
     userId: z.string().optional(),
-    name: z.string().min(2),
+    firstName: z.string().min(2),
+    lastName: z.string().min(2),
     email: z.string().email(),
     phone: z.string().min(10),
     country: z.string().min(2),
-    region: z.string().min(2),
+    regionId: z.string().optional(),
+    region: z.string().optional(),
     city: z.string().min(2),
     avatar: z.string().url().optional(),
     operatingAreas: z.object({
@@ -120,12 +124,14 @@ export default publicProcedure
     // Update user data
     const updatedUser: User = {
       ...existingUser,
-      name: input.name,
+      firstName: input.firstName,
+      lastName: input.lastName,
       email: input.email,
       phone: input.phone,
       location: {
         country: input.country,
         region: input.region,
+        regionId: input.regionId,
         city: input.city,
         coordinates: existingUser.location.coordinates, // Keep existing coordinates
       },

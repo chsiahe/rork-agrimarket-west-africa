@@ -2,9 +2,12 @@ export type ProductCondition = 'new' | 'fresh' | 'used' | 'needs_repair';
 
 export type DeliveryMode = 'local' | 'regional' | 'pickup';
 
+export type ProductStatus = 'active' | 'sold' | 'archived' | 'banned';
+
 export type ProductLocation = {
   country: string;
   region: string;
+  regionId?: string;
   city: string;
   coordinates?: {
     latitude: number;
@@ -50,7 +53,9 @@ export type Product = {
   negotiable: boolean;
   quantity: number;
   unit: string;
+  unitCode?: string;
   category: string;
+  categoryId?: string;
   condition: ProductCondition;
   images: string[];
   location: ProductLocation;
@@ -62,6 +67,7 @@ export type Product = {
   statistics: ProductStatistics;
   harvestDate?: string;
   allowCalls: boolean;
+  status?: ProductStatus;
 };
 
 export type CreateProductRequest = {
@@ -70,8 +76,8 @@ export type CreateProductRequest = {
   price: number;
   negotiable: boolean;
   quantity: number;
-  unit: string;
-  category: string;
+  unitCode: string;
+  categoryId: string;
   condition: ProductCondition;
   images: string[];
   location: ProductLocation;

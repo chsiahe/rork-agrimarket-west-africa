@@ -4,12 +4,13 @@ import { TRPCError } from "@trpc/server";
 
 export default publicProcedure
   .input(z.object({
-    name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+    lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     email: z.string().email("Email invalide"),
     phone: z.string().min(8, "Numéro de téléphone invalide"),
     password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
     country: z.string().min(2, "Pays requis"),
-    region: z.string().min(2, "Région requise"),
+    regionId: z.string().optional(),
     city: z.string().min(2, "Ville requise"),
     coordinates: z.object({
       latitude: z.number(),
@@ -37,11 +38,12 @@ export default publicProcedure
         password: input.password,
         options: {
           data: {
-            name: input.name,
+            first_name: input.firstName,
+            last_name: input.lastName,
             phone: input.phone,
             role: input.role,
             country: input.country,
-            region: input.region,
+            region_id: input.regionId,
             city: input.city,
           }
         }
@@ -67,12 +69,13 @@ export default publicProcedure
       // Create user profile data
       const profileData = {
         id: authData.user.id,
-        name: input.name,
+        first_name: input.firstName,
+        last_name: input.lastName,
         email: input.email,
         phone: input.phone,
         role: input.role,
         country: input.country,
-        region: input.region,
+        region_id: input.regionId,
         city: input.city,
         coordinates: input.coordinates ? 
           `POINT(${input.coordinates.longitude} ${input.coordinates.latitude})` : null,
@@ -96,11 +99,12 @@ export default publicProcedure
         const fallbackUser = {
           id: authData.user.id,
           email: input.email,
-          name: input.name,
+          first_name: input.firstName,
+          last_name: input.lastName,
           phone: input.phone,
           role: input.role,
           country: input.country,
-          region: input.region,
+          region_id: input.regionId,
           city: input.city,
           verified: false,
           metadata: input.operatingAreas ? { operatingAreas: input.operatingAreas } : {},
