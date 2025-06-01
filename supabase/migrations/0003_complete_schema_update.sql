@@ -459,7 +459,7 @@ CREATE POLICY messages_select_own
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.chats c
-      WHERE c.id = public.messages.chat_id
+      WHERE c.id = messages.chat_id
         AND auth.uid() IN (c.buyer_id, c.seller_id)
     )
   );
