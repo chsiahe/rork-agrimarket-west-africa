@@ -5,12 +5,12 @@
 If you're experiencing login/registration errors, run this command in your Supabase SQL editor:
 
 ```sql
-\i supabase/migrations/0008_safe_schema_update.sql
+\i supabase/migrations/0002_safe_update.sql
 ```
 
 ## Migration Files Overview
 
-### 0008_safe_schema_update.sql ⭐ **RECOMMENDED**
+### 0002_safe_update.sql ⭐ **RECOMMENDED**
 - Safely updates the database schema
 - Adds missing columns with existence checks
 - Fixes RLS policies for user login and registration
@@ -20,13 +20,13 @@ If you're experiencing login/registration errors, run this command in your Supab
 
 ### For Current Login/Registration Errors:
 1. Open Supabase Dashboard → SQL Editor
-2. Copy and paste the content of `0008_safe_schema_update.sql`
+2. Copy and paste the content of `0002_safe_update.sql`
 3. Click "Run"
 4. Test your login/registration
 
 ### For New Setup or Complete Fix:
-1. Run `0001_clean_setup.sql` if starting from scratch
-2. Then run `0008_safe_schema_update.sql` to ensure all updates are applied
+1. Run `0001_initial_setup.sql` if starting from scratch
+2. Then run `0002_safe_update.sql` to ensure all updates are applied
 
 ## Common Commands
 
@@ -78,7 +78,7 @@ SELECT
 - Run: `SELECT pg_notify('pgrst', 'reload schema');`
 
 ### If you get RLS policy violations:
-- Run `0008_safe_schema_update.sql` to update RLS policies
+- Run `0002_safe_update.sql` to update RLS policies
 
 ### If authentication still fails:
 - Check that the trigger is working: `SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';`
@@ -90,4 +90,4 @@ SELECT
 2. **Test on development** database first
 3. **Run one migration at a time**
 4. **Check the results** after each migration
-5. **Use 0008_safe_schema_update.sql** for most issues
+5. **Use 0002_safe_update.sql** for most issues
