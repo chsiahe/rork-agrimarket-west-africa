@@ -90,7 +90,7 @@ INSERT INTO public.units(code, label) VALUES
 ('panier', 'Panier')
 ON CONFLICT (code) DO NOTHING;
 
--- 3. Types ENUM avec gestion des conflits
+-- 3. Types ENUM avec gestion des conflits (compatible avec versions antérieures)
 -- --------------------------------------------------------------------
 DO $$
 BEGIN
