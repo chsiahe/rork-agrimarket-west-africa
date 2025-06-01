@@ -13,11 +13,13 @@ export default publicProcedure
       console.error('Supabase client not available during login attempt for email:', input.email);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Database connection not available',
+        message: 'Service de base de données non disponible',
       });
     }
 
     try {
+      console.log('Attempting login for email:', input.email);
+
       // Sign in with Supabase Auth
       const { data: authData, error: authError } = await ctx.supabase.auth.signInWithPassword({
         email: input.email,
@@ -40,116 +42,108 @@ export default publicProcedure
         });
       }
 
-      // Fetch additional user data from your users table
-      const { data: userData, error: userError } = await ctx.supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
+      console.log('Auth successful for user ID:', authData.user.id);
 
-      if (userError) {
-        console.error('User data fetch error for user ID:', authData.user.id, 'Error:', userError.message);
-        
-        // If no user found, create a basic profile to ensure consistency
-        if (userError.code === 'PGRST116') { // No rows returned
-          console.log('No user profile found, creating a basic profile for user ID:', authData.user.id);
+      // Fetch additional user data from your users table
+      let userData = null;
+      try {
+        const { data: fetchedUser, error: userError } = await ctx.supabase
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (userError) {
+          console.error('User data fetch error for user ID:', authData.user.id, 'Error:', userError.message);
           
-          try {
-            const { data: newUserData, error: insertError } = await ctx.supabase
-              .from('users')
-              .insert([{
-                id: authData.user.id,
-                email: input.email,
-                name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Utilisateur',
-                phone: authData.user.user_metadata?.phone || '',
-                role: 'buyer', // Default role
-                verified: false,
-                country: 'SN', // Default country
-                region: null,
-                city: null,
-                coordinates: null,
-                metadata: {},
-                settings: {},
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }])
-              .select()
-              .single();
-              
-            if (insertError) {
-              console.error('Error creating user profile:', insertError.message);
-              // If insert fails due to RLS, try with a more permissive approach
-              console.log('Attempting to create profile with admin privileges...');
-              
-              // Return basic user data from auth if profile creation fails
-              const basicUserData = {
-                id: authData.user.id,
-                email: input.email,
-                name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Utilisateur',
-                phone: authData.user.user_metadata?.phone || '',
-                role: 'buyer',
-                verified: false,
-                country: 'SN',
-                region: null,
-                city: null,
-                coordinates: null,
-                metadata: {},
-                settings: {},
-                created_at: authData.user.created_at,
-                updated_at: new Date().toISOString(),
-              };
-              
-              return {
-                user: basicUserData,
-                token: authData.session.access_token,
-              };
-            }
+          // If no user found, create a basic profile
+          if (userError.code === 'PGRST116') { // No rows returned
+            console.log('No user profile found, creating basic profile for user ID:', authData.user.id);
             
-            console.log('User profile created successfully for user ID:', authData.user.id);
-            return {
-              user: newUserData,
-              token: authData.session.access_token,
-            };
-          } catch (createError) {
-            console.error('Failed to create user profile:', createError);
-            
-            // Return basic user data from auth as fallback
-            const basicUserData = {
+            const basicProfile = {
               id: authData.user.id,
               email: input.email,
-              name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Utilisateur',
+              name: authData.user.user_metadata?.name || 
+                    authData.user.user_metadata?.full_name || 
+                    authData.user.email?.split('@')[0] || 
+                    'Utilisateur',
               phone: authData.user.user_metadata?.phone || '',
               role: 'buyer',
               verified: false,
               country: 'SN',
-              region: null,
-              city: null,
+              region: authData.user.user_metadata?.region || null,
+              city: authData.user.user_metadata?.city || null,
               coordinates: null,
-              metadata: {},
+              metadata: authData.user.user_metadata || {},
               settings: {},
               created_at: authData.user.created_at,
               updated_at: new Date().toISOString(),
             };
             
-            return {
-              user: basicUserData,
-              token: authData.session.access_token,
-            };
+            try {
+              const { data: newUserData, error: insertError } = await ctx.supabase
+                .from('users')
+                .insert([basicProfile])
+                .select()
+                .single();
+                
+              if (insertError) {
+                console.error('Error creating user profile during login:', insertError.message);
+                // Use basic profile as fallback
+                userData = basicProfile;
+              } else {
+                console.log('User profile created successfully during login');
+                userData = newUserData;
+              }
+            } catch (createError) {
+              console.error('Failed to create user profile during login:', createError);
+              // Use basic profile as fallback
+              userData = basicProfile;
+            }
+          } else {
+            // Other database error
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Erreur lors de la récupération des données utilisateur',
+            });
           }
+        } else {
+          userData = fetchedUser;
+          console.log('User data fetched successfully for user ID:', authData.user.id);
         }
+      } catch (error) {
+        console.error('Unexpected error fetching user data:', error);
         
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Utilisateur non trouvé dans la base de données',
-        });
+        // Create fallback user data from auth info
+        userData = {
+          id: authData.user.id,
+          email: input.email,
+          name: authData.user.user_metadata?.name || 
+                authData.user.user_metadata?.full_name || 
+                authData.user.email?.split('@')[0] || 
+                'Utilisateur',
+          phone: authData.user.user_metadata?.phone || '',
+          role: 'buyer',
+          verified: false,
+          country: 'SN',
+          region: authData.user.user_metadata?.region || null,
+          city: authData.user.user_metadata?.city || null,
+          coordinates: null,
+          metadata: authData.user.user_metadata || {},
+          settings: {},
+          created_at: authData.user.created_at,
+          updated_at: new Date().toISOString(),
+        };
       }
 
-      console.log('Successful login for email:', input.email);
+      console.log('Login successful for email:', input.email);
+      
       // Return user data and session token
       return {
         user: userData,
         token: authData.session.access_token,
       };
+
     } catch (error) {
       console.error('Unexpected login error for email:', input.email, 'Error:', error);
       
