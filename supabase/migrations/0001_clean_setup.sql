@@ -1,5 +1,6 @@
 -- Clean database setup migration
 -- This migration completely resets and sets up the database properly
+-- WARNING: This will DROP all existing data. Use with caution.
 
 -- Drop everything first to ensure clean state
 DROP SCHEMA IF EXISTS public CASCADE;
