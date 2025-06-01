@@ -343,15 +343,15 @@ BEGIN
       id, email, first_name, last_name, phone, role,
       country, verified, metadata, settings, created_at, updated_at
     ) VALUES (
-      NEW.id,
-      NEW.email,
-      COALESCE(NEW.raw_user_meta_data->>'first_name', ''), 
-      COALESCE(NEW.raw_user_meta_data->>'last_name', ''), 
-      NEW.raw_user_meta_data->>'phone',
-      COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'buyer'),
+      (SELECT NEW.id),
+      (SELECT NEW.email),
+      COALESCE((SELECT NEW.raw_user_meta_data->>'first_name'), ''), 
+      COALESCE((SELECT NEW.raw_user_meta_data->>'last_name'), ''), 
+      (SELECT NEW.raw_user_meta_data->>'phone'),
+      COALESCE((SELECT (NEW.raw_user_meta_data->>'role')::public.user_role), 'buyer'),
       'SN',
       FALSE,
-      COALESCE(NEW.raw_user_meta_data, '{}'::JSONB),
+      COALESCE((SELECT NEW.raw_user_meta_data), '{}'::JSONB),
       '{}'::JSONB,
       timezone('utc', now()),
       timezone('utc', now())
