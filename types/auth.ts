@@ -1,47 +1,47 @@
-import { User, UserRole, Location, OperatingArea } from './user';
+export type RegisterUserRole = 'farmer' | 'buyer' | 'cooperative' | 'distributor';
 
-export type { UserRole, User, Location, OperatingArea } from './user';
+export type OperatingArea = {
+  regions: string[];
+  maxDeliveryDistance: number;
+  deliveryZones: string[];
+};
 
-export type RegisterUserRole = Exclude<UserRole, 'admin'>;
-
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
+export type RegisterRequest = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   password: string;
   country: string;
-  regionId: string;
+  region: string;
   city: string;
   role: RegisterUserRole;
   operatingAreas?: OperatingArea;
-}
+};
 
-export interface UpdateProfileRequest {
-  userId?: string;
-  name: string;
+export type LoginRequest = {
   email: string;
-  phone: string;
-  country: string;
-  regionId: string;
-  city: string;
-  avatar?: string;
-  operatingAreas?: OperatingArea;
-}
+  password: string;
+};
 
-export interface AuthResponse {
-  user: User;
+export type AuthResponse = {
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    role: RegisterUserRole;
+    location: {
+      country: string;
+      region: string;
+      city: string;
+    };
+    operatingAreas?: OperatingArea;
+    verified: boolean;
+    rating: number;
+    totalRatings: number;
+    joinedAt: string;
+  };
   token: string;
-}
+};

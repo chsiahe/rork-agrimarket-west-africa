@@ -45,7 +45,7 @@ export default function RegisterScreen() {
     password: '',
     confirmPassword: '',
     country: 'SN',
-    regionId: '',
+    region: '',
     city: '',
     role: 'farmer' as RegisterUserRole,
   });
@@ -88,7 +88,7 @@ export default function RegisterScreen() {
         phone: formData.phone,
         password: formData.password,
         country: formData.country,
-        regionId: formData.regionId || '',
+        region: formData.region,
         city: formData.city,
         role: formData.role,
         operatingAreas: showOperatingAreas ? operatingAreas : undefined,
@@ -107,11 +107,11 @@ export default function RegisterScreen() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleLocationChange = (location: { country: string; regionId: string; city: string }) => {
+  const handleLocationChange = (location: { country: string; region: string; city: string }) => {
     setFormData(prev => ({
       ...prev,
       country: location.country,
-      regionId: location.regionId,
+      region: location.region,
       city: location.city
     }));
   };
@@ -215,7 +215,7 @@ export default function RegisterScreen() {
         <View style={styles.locationSection}>
           <LocationSelector
             country={formData.country}
-            regionId={formData.regionId}
+            region={formData.region}
             city={formData.city}
             onLocationChange={handleLocationChange}
             label="Votre localisation"
