@@ -88,7 +88,7 @@ export default function RegisterScreen() {
         phone: formData.phone,
         password: formData.password,
         country: formData.country,
-        region: formData.region,
+        regionId: formData.region || undefined,
         city: formData.city,
         role: formData.role,
         operatingAreas: showOperatingAreas ? operatingAreas : undefined,
