@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '@/constants/colors';
 import { countries, getRegionsByCountry, getCitiesByRegion } from '@/constants/locations';
@@ -24,36 +24,65 @@ export function LocationSelector({
   const [selectedCountry, setSelectedCountry] = useState(country);
   const [selectedRegion, setSelectedRegion] = useState(region);
   const [selectedCity, setSelectedCity] = useState(city);
-  const [regions, setRegions] = useState(getRegionsByCountry(country));
-  const [cities, setCities] = useState(getCitiesByRegion(country, region));
+  const [regions, setRegions] = useState(() => getRegionsByCountry(country));
+  const [cities, setCities] = useState(() => getCitiesByRegion(country, region));
 
+  // Memoize the callback to prevent unnecessary re-renders
+  const handleLocationChange = useCallback((newCountry: string, newRegion: string, newCity: string) => {
+    onLocationChange({
+      country: newCountry,
+      region: newRegion,
+      city: newCity
+    });
+  }, [onLocationChange]);
+
+  // Handle country change
   useEffect(() => {
-    const newRegions = getRegionsByCountry(selectedCountry);
-    setRegions(newRegions);
-    
     if (selectedCountry !== country) {
+      const newRegions = getRegionsByCountry(selectedCountry);
+      setRegions(newRegions);
       setSelectedRegion('');
       setSelectedCity('');
       setCities([]);
+      handleLocationChange(selectedCountry, '', '');
     }
-  }, [selectedCountry, country]);
+  }, [selectedCountry, country, handleLocationChange]);
 
+  // Handle region change
   useEffect(() => {
-    const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
-    setCities(newCities);
-    
     if (selectedRegion !== region) {
+      const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
+      setCities(newCities);
       setSelectedCity('');
+      handleLocationChange(selectedCountry, selectedRegion, '');
     }
-  }, [selectedRegion, region]);
+  }, [selectedRegion, region, selectedCountry, handleLocationChange]);
+
+  // Handle city change
+  useEffect(() => {
+    if (selectedCity !== city) {
+      handleLocationChange(selectedCountry, selectedRegion, selectedCity);
+    }
+  }, [selectedCity, city, selectedCountry, selectedRegion, handleLocationChange]);
+
+  // Update local state when props change
+  useEffect(() => {
+    if (country !== selectedCountry) {
+      setSelectedCountry(country);
+    }
+  }, [country, selectedCountry]);
 
   useEffect(() => {
-    onLocationChange({
-      country: selectedCountry,
-      region: selectedRegion,
-      city: selectedCity
-    });
-  }, [selectedCountry, selectedRegion, selectedCity, onLocationChange]);
+    if (region !== selectedRegion) {
+      setSelectedRegion(region);
+    }
+  }, [region, selectedRegion]);
+
+  useEffect(() => {
+    if (city !== selectedCity) {
+      setSelectedCity(city);
+    }
+  }, [city, selectedCity]);
 
   const countryOptions = countries.map(c => ({
     value: c.code,
@@ -70,6 +99,18 @@ export function LocationSelector({
     label: c
   }));
 
+  const handleCountrySelect = useCallback((value: string) => {
+    setSelectedCountry(value);
+  }, []);
+
+  const handleRegionSelect = useCallback((value: string) => {
+    setSelectedRegion(value);
+  }, []);
+
+  const handleCitySelect = useCallback((value: string) => {
+    setSelectedCity(value);
+  }, []);
+
   return (
     <View style={styles.container}>
       {label && (
@@ -84,7 +125,7 @@ export function LocationSelector({
           <Dropdown
             options={countryOptions}
             value={selectedCountry}
-            onSelect={setSelectedCountry}
+            onSelect={handleCountrySelect}
             placeholder="Sélectionner un pays"
           />
         </View>
@@ -96,7 +137,7 @@ export function LocationSelector({
           <Dropdown
             options={regionOptions}
             value={selectedRegion}
-            onSelect={setSelectedRegion}
+            onSelect={handleRegionSelect}
             placeholder="Sélectionner une région"
             disabled={!selectedCountry}
           />
@@ -107,7 +148,7 @@ export function LocationSelector({
           <Dropdown
             options={cityOptions}
             value={selectedCity}
-            onSelect={setSelectedCity}
+            onSelect={handleCitySelect}
             placeholder="Sélectionner une ville"
             disabled={!selectedRegion}
           />

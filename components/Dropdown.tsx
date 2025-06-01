@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet, TextInput, Platform, Keyboard } from 'react-native';
 import { ChevronDown, Check, Search, X } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
@@ -30,32 +30,20 @@ export function Dropdown({
 }: DropdownProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredOptions, setFilteredOptions] = useState(options);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchInputRef = useRef<TextInput>(null);
 
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = useMemo(() => 
+    options.find(option => option.value === value), 
+    [options, value]
+  );
 
-  useEffect(() => {
-    if (searchable && isVisible) {
-      filterOptions(searchQuery);
-    } else {
-      setFilteredOptions(options);
-    }
-  }, [searchQuery, options, isVisible]);
-
-  useEffect(() => {
-    // Reset highlighted index when filtered options change
-    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
-  }, [filteredOptions]);
-
-  const filterOptions = (query: string) => {
-    if (!query.trim()) {
-      setFilteredOptions(options);
-      return;
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !searchQuery.trim()) {
+      return options;
     }
 
-    const normalizedQuery = query.toLowerCase().trim();
+    const normalizedQuery = searchQuery.toLowerCase().trim();
     
     // First, find exact matches at the beginning of the string
     const startsWithMatches = options.filter(option => 
@@ -71,21 +59,23 @@ export function Dropdown({
     );
     
     // Combine the results, prioritizing exact matches
-    const filtered = [...startsWithMatches, ...containsMatches];
-    
-    setFilteredOptions(filtered);
-  };
+    return [...startsWithMatches, ...containsMatches];
+  }, [options, searchQuery, searchable]);
 
-  const handleSelect = (optionValue: string) => {
+  // Reset highlighted index when filtered options change
+  useEffect(() => {
+    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
+  }, [filteredOptions.length]);
+
+  const handleSelect = useCallback((optionValue: string) => {
     onSelect(optionValue);
     setIsVisible(false);
     setSearchQuery('');
-  };
+  }, [onSelect]);
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     if (!disabled) {
       setSearchQuery('');
-      setFilteredOptions(options);
       setIsVisible(true);
       
       // Focus the search input after a short delay to ensure the modal is visible
@@ -95,15 +85,15 @@ export function Dropdown({
         }
       }, 100);
     }
-  };
+  }, [disabled, searchable]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setSearchQuery('');
     Keyboard.dismiss();
-  };
+  }, []);
 
-  const handleSearchChange = (text: string) => {
+  const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
     
     if (autoComplete && text.trim() && filteredOptions.length > 0) {
@@ -114,9 +104,9 @@ export function Dropdown({
         setHighlightedIndex(0);
       }
     }
-  };
+  }, [autoComplete, filteredOptions]);
 
-  const handleKeyPress = (e: any) => {
+  const handleKeyPress = useCallback((e: any) => {
     if (Platform.OS === 'web') {
       // Handle keyboard navigation for web
       if (e.key === 'ArrowDown') {
@@ -127,9 +117,9 @@ export function Dropdown({
         handleSelect(filteredOptions[highlightedIndex].value);
       }
     }
-  };
+  }, [filteredOptions, highlightedIndex, handleSelect]);
 
-  const highlightMatch = (text: string, query: string) => {
+  const highlightMatch = useCallback((text: string, query: string) => {
     if (!query.trim() || !searchable) {
       return <Text style={styles.optionText}>{text}</Text>;
     }
@@ -151,7 +141,11 @@ export function Dropdown({
         {text.substring(index + query.length)}
       </Text>
     );
-  };
+  }, [searchable]);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+  }, []);
 
   return (
     <>
@@ -201,7 +195,7 @@ export function Dropdown({
                   onKeyPress={handleKeyPress}
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <TouchableOpacity onPress={clearSearch}>
                     <X size={18} color={colors.textLight} />
                   </TouchableOpacity>
                 )}
