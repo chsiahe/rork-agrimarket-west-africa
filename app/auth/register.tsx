@@ -111,7 +111,7 @@ export default function RegisterScreen() {
     setFormData(prev => ({
       ...prev,
       country: location.country,
-      regionId: location.regionId,
+      regionId: location.regionId || '',
       city: location.city
     }));
   };
