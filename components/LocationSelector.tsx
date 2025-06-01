@@ -38,9 +38,9 @@ export function LocationSelector({
 
   // Handle country change
   useEffect(() => {
+    const newRegions = getRegionsByCountry(selectedCountry);
+    setRegions(newRegions);
     if (selectedCountry !== country) {
-      const newRegions = getRegionsByCountry(selectedCountry);
-      setRegions(newRegions);
       setSelectedRegion('');
       setSelectedCity('');
       setCities([]);
@@ -50,9 +50,9 @@ export function LocationSelector({
 
   // Handle region change
   useEffect(() => {
+    const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
+    setCities(newCities);
     if (selectedRegion !== region) {
-      const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
-      setCities(newCities);
       setSelectedCity('');
       handleLocationChange(selectedCountry, selectedRegion, '');
     }
@@ -64,25 +64,6 @@ export function LocationSelector({
       handleLocationChange(selectedCountry, selectedRegion, selectedCity);
     }
   }, [selectedCity, city, selectedCountry, selectedRegion, handleLocationChange]);
-
-  // Update local state when props change
-  useEffect(() => {
-    if (country !== selectedCountry) {
-      setSelectedCountry(country);
-    }
-  }, [country, selectedCountry]);
-
-  useEffect(() => {
-    if (region !== selectedRegion) {
-      setSelectedRegion(region);
-    }
-  }, [region, selectedRegion]);
-
-  useEffect(() => {
-    if (city !== selectedCity) {
-      setSelectedCity(city);
-    }
-  }, [city, selectedCity]);
 
   const countryOptions = countries.map(c => ({
     value: c.code,
