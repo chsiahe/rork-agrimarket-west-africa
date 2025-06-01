@@ -6,9 +6,9 @@ import { User, UserRole } from '@/types/user';
 
 // Supabase configuration using environment variables
 const SUPABASE_CONFIG = {
-  url: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://kycdgthnacvnwqaaixgw.supabase.co',
-  anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5Y2RndGhuYWN2bndxYWFpeGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NzY4OTYsImV4cCI6MjA2NDM1Mjg5Nn0.UFah_G3gdP56mJUEphS9AWe4l-gIo0IrTzb-b7j4oPY',
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5Y2RndGhuYWN2bndxYWFpeGd3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODc3Njg5NiwiZXhwIjoyMDY0MzUyODk2fQ.d0r-e-nYYu7pfiqVKv-ZwKGeOV1hdEtw6mQ8wdBIFLU',
+  url: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://sfuzlsgoqduxmkcjrdfb.supabase.co',
+  anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmdXpsc2dvcWR1eG1rY2pyZGZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4MDc4NzcsImV4cCI6MjA2NDM4Mzg3N30.VEIhpqsMh-yfEmTc31mqE5sPtljtznCUsK3cFmYKcd0',
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmdXpsc2dvcWR1eG1rY2pyZGZiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODgwNzg3NywiZXhwIjoyMDY0MzgzODc3fQ.0wy76XIukvInFfPqXcCn6ErdYkRpg3Rg5Bjma71VNCs',
 };
 
 // JWT configuration

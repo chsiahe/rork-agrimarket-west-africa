@@ -94,7 +94,7 @@ export default function RegisterScreen() {
         operatingAreas: showOperatingAreas ? operatingAreas : undefined,
       });
       
-      login(result.user, result.token ?? "");
+      login(result.user, result.token || "");
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Erreur lors de la création du compte');
