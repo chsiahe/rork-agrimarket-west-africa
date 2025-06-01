@@ -25,54 +25,105 @@ export default publicProcedure
   .mutation(async ({ input, ctx }) => {
     // In a real application with Supabase, you would:
     if (ctx.supabase) {
-      // 1. Create user in Supabase Auth
-      const { data: authData, error: authError } = await ctx.supabase.auth.signUp({
-        email: input.email,
-        password: input.password,
-        options: {
-          data: {
-            name: input.name,
-            phone: input.phone,
-          }
-        }
-      });
-
-      if (authError) {
-        throw new Error(`Erreur lors de la création du compte: ${authError.message}`);
-      }
-
-      if (!authData.user) {
-        throw new Error('Erreur lors de la création du compte');
-      }
-
-      // 2. Create user profile in users table
-      const { data: userData, error: userError } = await ctx.supabase
-        .from('users')
-        .insert([{
-          id: authData.user.id,
-          name: input.name,
+      try {
+        // 1. Create user in Supabase Auth
+        const { data: authData, error: authError } = await ctx.supabase.auth.signUp({
           email: input.email,
-          phone: input.phone,
-          role: input.role,
-          country: input.country,
-          region: input.region,
-          city: input.city,
-          coordinates: input.coordinates ? `POINT(${input.coordinates.longitude} ${input.coordinates.latitude})` : null,
-          verified: false,
-          metadata: input.operatingAreas ? { operatingAreas: input.operatingAreas } : {},
-        }])
-        .select()
-        .single();
+          password: input.password,
+          options: {
+            data: {
+              name: input.name,
+              phone: input.phone,
+            }
+          }
+        });
 
-      if (userError) {
-        throw new Error(`Erreur lors de la création du profil: ${userError.message}`);
+        if (authError) {
+          console.error('Auth signup error:', authError);
+          throw new Error(`Erreur lors de la création du compte: ${authError.message}`);
+        }
+
+        if (!authData.user) {
+          throw new Error('Erreur lors de la création du compte');
+        }
+
+        // 2. Wait a moment for the trigger to potentially create the profile
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 3. Check if profile already exists (created by trigger)
+        const { data: existingUser } = await ctx.supabase
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        let userData;
+        
+        if (existingUser) {
+          // Update existing profile with registration data
+          const { data: updatedUser, error: updateError } = await ctx.supabase
+            .from('users')
+            .update({
+              name: input.name,
+              phone: input.phone,
+              role: input.role,
+              country: input.country,
+              region: input.region,
+              city: input.city,
+              coordinates: input.coordinates ? `POINT(${input.coordinates.longitude} ${input.coordinates.latitude})` : null,
+              metadata: input.operatingAreas ? { operatingAreas: input.operatingAreas } : {},
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', authData.user.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error('Profile update error:', updateError);
+            throw new Error(`Erreur lors de la mise à jour du profil: ${updateError.message}`);
+          }
+          
+          userData = updatedUser;
+        } else {
+          // Create new profile if trigger didn't work
+          const { data: newUser, error: userError } = await ctx.supabase
+            .from('users')
+            .insert([{
+              id: authData.user.id,
+              name: input.name,
+              email: input.email,
+              phone: input.phone,
+              role: input.role,
+              country: input.country,
+              region: input.region,
+              city: input.city,
+              coordinates: input.coordinates ? `POINT(${input.coordinates.longitude} ${input.coordinates.latitude})` : null,
+              verified: false,
+              metadata: input.operatingAreas ? { operatingAreas: input.operatingAreas } : {},
+              settings: {},
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }])
+            .select()
+            .single();
+
+          if (userError) {
+            console.error('Profile creation error:', userError);
+            throw new Error(`Erreur lors de la création du profil: ${userError.message}`);
+          }
+          
+          userData = newUser;
+        }
+
+        return {
+          user: userData,
+          token: authData.session?.access_token,
+          message: "Compte créé avec succès"
+        };
+      } catch (error) {
+        console.error('Registration error:', error);
+        throw error;
       }
-
-      return {
-        user: userData,
-        token: authData.session?.access_token,
-        message: "Compte créé avec succès"
-      };
     }
     
     // For now, create a mock user
