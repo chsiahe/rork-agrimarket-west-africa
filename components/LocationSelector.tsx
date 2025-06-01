@@ -6,56 +6,54 @@ import { Dropdown } from '@/components/Dropdown';
 
 interface LocationSelectorProps {
   country: string;
-  region: string;
+  regionId: string;
   city: string;
-  onLocationChange: (location: { country: string; region: string; city: string }) => void;
+  onLocationChange: (location: { country: string; regionId: string; city: string }) => void;
   label?: string;
   required?: boolean;
 }
 
 export function LocationSelector({
   country,
-  region,
+  regionId,
   city,
   onLocationChange,
   label = 'Localisation',
   required = false
 }: LocationSelectorProps) {
   const [selectedCountry, setSelectedCountry] = useState(country);
-  const [selectedRegion, setSelectedRegion] = useState(region);
+  const [selectedRegionId, setSelectedRegionId] = useState(regionId);
   const [selectedCity, setSelectedCity] = useState(city);
   const [regions, setRegions] = useState(getRegionsByCountry(country));
-  const [cities, setCities] = useState(getCitiesByRegion(country, region));
+  const [cities, setCities] = useState(getCitiesByRegion(country, regionId));
 
   useEffect(() => {
     const newRegions = getRegionsByCountry(selectedCountry);
     setRegions(newRegions);
     
-    // Reset region and city if country changes
     if (selectedCountry !== country) {
-      setSelectedRegion('');
+      setSelectedRegionId('');
       setSelectedCity('');
       setCities([]);
     }
   }, [selectedCountry]);
 
   useEffect(() => {
-    const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
+    const newCities = getCitiesByRegion(selectedCountry, selectedRegionId);
     setCities(newCities);
     
-    // Reset city if region changes
-    if (selectedRegion !== region) {
+    if (selectedRegionId !== regionId) {
       setSelectedCity('');
     }
-  }, [selectedRegion]);
+  }, [selectedRegionId]);
 
   useEffect(() => {
     onLocationChange({
       country: selectedCountry,
-      region: selectedRegion,
+      regionId: selectedRegionId,
       city: selectedCity
     });
-  }, [selectedCountry, selectedRegion, selectedCity]);
+  }, [selectedCountry, selectedRegionId, selectedCity]);
 
   const countryOptions = countries.map(c => ({
     value: c.code,
@@ -63,7 +61,7 @@ export function LocationSelector({
   }));
 
   const regionOptions = regions.map(r => ({
-    value: r.name,
+    value: r.id,
     label: r.name
   }));
 
@@ -97,8 +95,8 @@ export function LocationSelector({
           <Text style={styles.inputLabel}>Région</Text>
           <Dropdown
             options={regionOptions}
-            value={selectedRegion}
-            onSelect={setSelectedRegion}
+            value={selectedRegionId}
+            onSelect={setSelectedRegionId}
             placeholder="Sélectionner une région"
             disabled={!selectedCountry}
           />
@@ -111,7 +109,7 @@ export function LocationSelector({
             value={selectedCity}
             onSelect={setSelectedCity}
             placeholder="Sélectionner une ville"
-            disabled={!selectedRegion}
+            disabled={!selectedRegionId}
           />
         </View>
       </View>

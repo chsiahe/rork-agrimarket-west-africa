@@ -6,6 +6,8 @@ import { trpc } from '@/lib/trpc';
 import { useAuthStore } from '@/stores/auth-store';
 import { User, Mail, Lock, Phone, Eye, EyeOff, Tractor, ShoppingCart, Building, Truck } from 'lucide-react-native';
 import { RegisterUserRole, OperatingArea } from '@/types/auth';
+import { LocationSelector } from '@/components/LocationSelector';
+import { OperatingAreaSelector } from '@/components/OperatingAreaSelector';
 
 const roleOptions = [
   {
@@ -43,7 +45,7 @@ export default function RegisterScreen() {
     password: '',
     confirmPassword: '',
     country: 'SN',
-    region: '',
+    regionId: '',
     city: '',
     role: 'farmer' as RegisterUserRole,
   });
@@ -61,7 +63,7 @@ export default function RegisterScreen() {
   const registerMutation = trpc.auth.register.useMutation();
 
   const handleRegister = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.region || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.country || !formData.regionId || !formData.city) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -86,7 +88,7 @@ export default function RegisterScreen() {
         phone: formData.phone,
         password: formData.password,
         country: formData.country,
-        region: formData.region,
+        regionId: formData.regionId,
         city: formData.city,
         role: formData.role,
         operatingAreas: showOperatingAreas ? operatingAreas : undefined,
@@ -105,18 +107,17 @@ export default function RegisterScreen() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleLocationChange = (location: { country: string; region: string; city: string }) => {
+  const handleLocationChange = (location: { country: string; regionId: string; city: string }) => {
     setFormData(prev => ({
       ...prev,
       country: location.country,
-      region: location.region,
+      regionId: location.regionId,
       city: location.city
     }));
   };
 
   const handleRoleSelect = (role: RegisterUserRole) => {
     updateFormData('role', role);
-    // Show operating areas for farmers and distributors
     setShowOperatingAreas(role === 'farmer' || role === 'distributor');
   };
 
@@ -214,7 +215,7 @@ export default function RegisterScreen() {
         <View style={styles.locationSection}>
           <LocationSelector
             country={formData.country}
-            region={formData.region}
+            regionId={formData.regionId}
             city={formData.city}
             onLocationChange={handleLocationChange}
             label="Votre localisation"

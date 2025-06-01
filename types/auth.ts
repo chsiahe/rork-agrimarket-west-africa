@@ -23,7 +23,7 @@ export interface RegisterRequest {
   phone: string;
   password: string;
   country: string;
-  region: string;
+  regionId: string;
   city: string;
   role: RegisterUserRole;
   operatingAreas?: OperatingArea;
@@ -35,7 +35,7 @@ export interface UpdateProfileRequest {
   email: string;
   phone: string;
   country: string;
-  region: string;
+  regionId: string;
   city: string;
   avatar?: string;
   operatingAreas?: OperatingArea;
