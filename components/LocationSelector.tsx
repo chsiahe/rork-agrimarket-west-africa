@@ -38,9 +38,9 @@ export function LocationSelector({
 
   // Handle country change
   useEffect(() => {
-    const newRegions = getRegionsByCountry(selectedCountry);
-    setRegions(newRegions);
     if (selectedCountry !== country) {
+      const newRegions = getRegionsByCountry(selectedCountry);
+      setRegions(newRegions);
       setSelectedRegion('');
       setSelectedCity('');
       setCities([]);
@@ -50,9 +50,9 @@ export function LocationSelector({
 
   // Handle region change
   useEffect(() => {
-    const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
-    setCities(newCities);
     if (selectedRegion !== region) {
+      const newCities = getCitiesByRegion(selectedCountry, selectedRegion);
+      setCities(newCities);
       setSelectedCity('');
       handleLocationChange(selectedCountry, selectedRegion, '');
     }

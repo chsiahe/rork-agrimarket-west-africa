@@ -64,7 +64,11 @@ export function Dropdown({
 
   // Reset highlighted index when filtered options change
   useEffect(() => {
-    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
+    if (filteredOptions.length > 0) {
+      setHighlightedIndex(0);
+    } else {
+      setHighlightedIndex(-1);
+    }
   }, [filteredOptions.length]);
 
   const handleSelect = useCallback((optionValue: string) => {
