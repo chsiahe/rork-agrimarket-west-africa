@@ -14,35 +14,35 @@ export default function Register() {
     phone: '',
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: (data) => {
+      useAuthStore.getState().login(data.user, data.token);
+      router.replace('/(tabs)');
+    },
+    onError: (err) => {
+      setError(err.message || 'Une erreur est survenue');
+    },
+  });
 
   const handleRegister = async () => {
     try {
       setError('');
-      setIsLoading(true);
 
       if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
         setError('Veuillez remplir tous les champs obligatoires');
         return;
       }
 
-      const result = await trpc.auth.register.mutate({
+      await registerMutation.mutateAsync({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone || undefined,
       });
-
-      if (result.user) {
-        useAuthStore.getState().setUser(result.user);
-        useAuthStore.getState().setToken(result.token);
-        router.replace('/(tabs)');
-      }
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
-    } finally {
-      setIsLoading(false);
+      // Error is handled in onError callback
     }
   };
 
@@ -110,9 +110,9 @@ export default function Register() {
           <TouchableOpacity
             style={styles.button}
             onPress={handleRegister}
-            disabled={isLoading}
+            disabled={registerMutation.isLoading}
           >
-            {isLoading ? (
+            {registerMutation.isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>Créer un compte</Text>
