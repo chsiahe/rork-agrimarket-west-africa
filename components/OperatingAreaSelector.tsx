@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '@/constants/colors';
-import { countries, getRegionsByCountry } from '@/constants/locations';
-import { Dropdown } from '@/components/Dropdown';
+import { getRegionsByCountry } from '@/constants/locations';
 import { X, Plus } from 'lucide-react-native';
-import { OperatingArea } from '@/types/user';
+import { OperatingArea } from '@/types/auth';
 
 interface OperatingAreaSelectorProps {
   operatingAreas?: OperatingArea;
