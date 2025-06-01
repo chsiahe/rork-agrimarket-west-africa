@@ -353,138 +353,282 @@ ALTER TABLE public.market_trends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_ratings ENABLE ROW LEVEL SECURITY;
 
 -- 15.2. Policies pour public.users
-CREATE POLICY IF NOT EXISTS users_select_all
-  ON public.users
-  FOR SELECT USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_select_all' AND tablename = 'users') THEN
+    CREATE POLICY users_select_all
+      ON public.users
+      FOR SELECT USING (true);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS users_insert_own
-  ON public.users
-  FOR INSERT WITH CHECK (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_insert_own' AND tablename = 'users') THEN
+    CREATE POLICY users_insert_own
+      ON public.users
+      FOR INSERT WITH CHECK (true);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS users_update_own
-  ON public.users
-  FOR UPDATE USING (auth.uid() = id)
-  WITH CHECK (
-    auth.uid() = id
-    AND NEW.role = OLD.role                    -- empêche modification du rôle
-    AND NEW.verified = OLD.verified            -- empêche modification de verified
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_update_own' AND tablename = 'users') THEN
+    CREATE POLICY users_update_own
+      ON public.users
+      FOR UPDATE USING (auth.uid() = id)
+      WITH CHECK (
+        auth.uid() = id
+        AND NEW.role = OLD.role                    -- empêche modification du rôle
+        AND NEW.verified = OLD.verified            -- empêche modification de verified
+      );
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS users_delete_own
-  ON public.users
-  FOR DELETE USING (auth.uid() = id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'users_delete_own' AND tablename = 'users') THEN
+    CREATE POLICY users_delete_own
+      ON public.users
+      FOR DELETE USING (auth.uid() = id);
+  END IF;
+END
+$$;
 
 -- 15.3. Policies pour public.operating_areas
-CREATE POLICY IF NOT EXISTS operating_areas_select_all
-  ON public.operating_areas
-  FOR SELECT USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'operating_areas_select_all' AND tablename = 'operating_areas') THEN
+    CREATE POLICY operating_areas_select_all
+      ON public.operating_areas
+      FOR SELECT USING (true);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS operating_areas_manage_own
-  ON public.operating_areas
-  FOR ALL USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'operating_areas_manage_own' AND tablename = 'operating_areas') THEN
+    CREATE POLICY operating_areas_manage_own
+      ON public.operating_areas
+      FOR ALL USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END
+$$;
 
 -- 15.4. Policies pour public.products
-CREATE POLICY IF NOT EXISTS products_select_active
-  ON public.products
-  FOR SELECT USING (status = 'active');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'products_select_active' AND tablename = 'products') THEN
+    CREATE POLICY products_select_active
+      ON public.products
+      FOR SELECT USING (status = 'active');
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS products_manage_own
-  ON public.products
-  FOR ALL USING (auth.uid() = seller_id)
-  WITH CHECK (auth.uid() = seller_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'products_manage_own' AND tablename = 'products') THEN
+    CREATE POLICY products_manage_own
+      ON public.products
+      FOR ALL USING (auth.uid() = seller_id)
+      WITH CHECK (auth.uid() = seller_id);
+  END IF;
+END
+$$;
 
 -- 15.5. Policies pour public.chats
-CREATE POLICY IF NOT EXISTS chats_select_own
-  ON public.chats
-  FOR SELECT USING (auth.uid() IN (buyer_id, seller_id));
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_select_own' AND tablename = 'chats') THEN
+    CREATE POLICY chats_select_own
+      ON public.chats
+      FOR SELECT USING (auth.uid() IN (buyer_id, seller_id));
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS chats_insert_as_buyer
-  ON public.chats
-  FOR INSERT WITH CHECK (auth.uid() = buyer_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_insert_as_buyer' AND tablename = 'chats') THEN
+    CREATE POLICY chats_insert_as_buyer
+      ON public.chats
+      FOR INSERT WITH CHECK (auth.uid() = buyer_id);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS chats_update_own
-  ON public.chats
-  FOR UPDATE USING (auth.uid() IN (buyer_id, seller_id))
-  WITH CHECK (auth.uid() IN (buyer_id, seller_id));
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_update_own' AND tablename = 'chats') THEN
+    CREATE POLICY chats_update_own
+      ON public.chats
+      FOR UPDATE USING (auth.uid() IN (buyer_id, seller_id))
+      WITH CHECK (auth.uid() IN (buyer_id, seller_id));
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS chats_delete_own
-  ON public.chats
-  FOR DELETE USING (auth.uid() IN (buyer_id, seller_id));
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'chats_delete_own' AND tablename = 'chats') THEN
+    CREATE POLICY chats_delete_own
+      ON public.chats
+      FOR DELETE USING (auth.uid() IN (buyer_id, seller_id));
+  END IF;
+END
+$$;
 
 -- 15.6. Policies pour public.messages
-CREATE POLICY IF NOT EXISTS messages_select_own
-  ON public.messages
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.chats c
-      WHERE c.id = public.messages.chat_id
-        AND auth.uid() IN (c.buyer_id, c.seller_id)
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_select_own' AND tablename = 'messages') THEN
+    CREATE POLICY messages_select_own
+      ON public.messages
+      FOR SELECT USING (
+        EXISTS (
+          SELECT 1 FROM public.chats c
+          WHERE c.id = public.messages.chat_id
+            AND auth.uid() IN (c.buyer_id, c.seller_id)
+        )
+      );
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS messages_insert_own
-  ON public.messages
-  FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.chats c
-      WHERE c.id = chat_id
-        AND auth.uid() IN (c.buyer_id, c.seller_id)
-    )
-    AND auth.uid() = sender_id
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_insert_own' AND tablename = 'messages') THEN
+    CREATE POLICY messages_insert_own
+      ON public.messages
+      FOR INSERT WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM public.chats c
+          WHERE c.id = chat_id
+            AND auth.uid() IN (c.buyer_id, c.seller_id)
+        )
+        AND auth.uid() = sender_id
+      );
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS messages_update_own
-  ON public.messages
-  FOR UPDATE USING (
-    auth.uid() = sender_id
-    AND NOT is_deleted
-  ) WITH CHECK (
-    auth.uid() = sender_id
-    AND NEW.is_deleted = FALSE
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_update_own' AND tablename = 'messages') THEN
+    CREATE POLICY messages_update_own
+      ON public.messages
+      FOR UPDATE USING (
+        auth.uid() = sender_id
+        AND NOT is_deleted
+      ) WITH CHECK (
+        auth.uid() = sender_id
+        AND NEW.is_deleted = FALSE
+      );
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS messages_delete_own
-  ON public.messages
-  FOR DELETE USING (
-    auth.uid() = sender_id
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'messages_delete_own' AND tablename = 'messages') THEN
+    CREATE POLICY messages_delete_own
+      ON public.messages
+      FOR DELETE USING (
+        auth.uid() = sender_id
+      );
+  END IF;
+END
+$$;
 
 -- 15.7. Policies pour public.market_trends
-CREATE POLICY IF NOT EXISTS market_trends_select_all
-  ON public.market_trends
-  FOR SELECT USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_select_all' AND tablename = 'market_trends') THEN
+    CREATE POLICY market_trends_select_all
+      ON public.market_trends
+      FOR SELECT USING (true);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS market_trends_insert_authenticated
-  ON public.market_trends
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_insert_authenticated' AND tablename = 'market_trends') THEN
+    CREATE POLICY market_trends_insert_authenticated
+      ON public.market_trends
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS market_trends_update_own
-  ON public.market_trends
-  FOR UPDATE USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_update_own' AND tablename = 'market_trends') THEN
+    CREATE POLICY market_trends_update_own
+      ON public.market_trends
+      FOR UPDATE USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS market_trends_delete_own
-  ON public.market_trends
-  FOR DELETE USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'market_trends_delete_own' AND tablename = 'market_trends') THEN
+    CREATE POLICY market_trends_delete_own
+      ON public.market_trends
+      FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END
+$$;
 
 -- 15.8. Policies pour public.user_ratings
-CREATE POLICY IF NOT EXISTS user_ratings_select_all
-  ON public.user_ratings
-  FOR SELECT USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_select_all' AND tablename = 'user_ratings') THEN
+    CREATE POLICY user_ratings_select_all
+      ON public.user_ratings
+      FOR SELECT USING (true);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS user_ratings_insert_authenticated
-  ON public.user_ratings
-  FOR INSERT WITH CHECK (auth.uid() = rater_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_insert_authenticated' AND tablename = 'user_ratings') THEN
+    CREATE POLICY user_ratings_insert_authenticated
+      ON public.user_ratings
+      FOR INSERT WITH CHECK (auth.uid() = rater_id);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS user_ratings_update_own
-  ON public.user_ratings
-  FOR UPDATE USING (auth.uid() = rater_id)
-  WITH CHECK (auth.uid() = rater_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_update_own' AND tablename = 'user_ratings') THEN
+    CREATE POLICY user_ratings_update_own
+      ON public.user_ratings
+      FOR UPDATE USING (auth.uid() = rater_id)
+      WITH CHECK (auth.uid() = rater_id);
+  END IF;
+END
+$$;
 
-CREATE POLICY IF NOT EXISTS user_ratings_delete_own
-  ON public.user_ratings
-  FOR DELETE USING (auth.uid() = rater_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'user_ratings_delete_own' AND tablename = 'user_ratings') THEN
+    CREATE POLICY user_ratings_delete_own
+      ON public.user_ratings
+      FOR DELETE USING (auth.uid() = rater_id);
+  END IF;
+END
+$$;
 
 -- 16. Indexation avancée et performances
 -- --------------------------------------------------------------------
