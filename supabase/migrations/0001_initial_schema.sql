@@ -301,15 +301,30 @@ CREATE POLICY "Users can update own profile"
     TO authenticated
     USING (auth.uid() = id);
 
-CREATE POLICY "Users can view all products"
+CREATE POLICY "Users can insert own profile"
+    ON users FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can view all active products"
     ON products FOR SELECT
     TO authenticated
+    USING (status = 'active');
+
+CREATE POLICY "Anonymous users can view active products"
+    ON products FOR SELECT
+    TO anon
     USING (status = 'active');
 
 CREATE POLICY "Sellers can manage own products"
     ON products FOR ALL
     TO authenticated
     USING (auth.uid() = seller_id);
+
+CREATE POLICY "Users can create products"
+    ON products FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = seller_id);
 
 CREATE POLICY "Users can view own chats"
     ON chats FOR SELECT
@@ -343,11 +358,65 @@ CREATE POLICY "Users can view messages in own chats"
         )
     );
 
+CREATE POLICY "Users can update messages in own chats"
+    ON messages FOR UPDATE
+    TO authenticated
+    USING (
+        sender_id = auth.uid()
+        AND EXISTS (
+            SELECT 1 FROM chats
+            WHERE chats.id = chat_id
+            AND auth.uid() IN (buyer_id, seller_id)
+        )
+    );
+
+CREATE POLICY "Users can view own operating areas"
+    ON operating_areas FOR SELECT
+    TO authenticated
+    USING (user_id = auth.uid());
+
+CREATE POLICY "Users can manage own operating areas"
+    ON operating_areas FOR ALL
+    TO authenticated
+    USING (user_id = auth.uid());
+
+CREATE POLICY "Users can view market trends"
+    ON market_trends FOR SELECT
+    TO authenticated
+    USING (true);
+
+CREATE POLICY "Users can submit market trends"
+    ON market_trends FOR INSERT
+    TO authenticated
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can view ratings"
+    ON user_ratings FOR SELECT
+    TO authenticated
+    USING (true);
+
+CREATE POLICY "Users can create ratings"
+    ON user_ratings FOR INSERT
+    TO authenticated
+    WITH CHECK (rater_id = auth.uid());
+
 -- Insert initial data
-INSERT INTO countries (code, name) VALUES ('SN', 'Sénégal') ON CONFLICT DO NOTHING;
+INSERT INTO countries (code, name) VALUES 
+    ('SN', 'Sénégal'),
+    ('FR', 'France'),
+    ('US', 'United States'),
+    ('CA', 'Canada'),
+    ('GB', 'United Kingdom'),
+    ('DE', 'Germany'),
+    ('ES', 'Spain'),
+    ('IT', 'Italy'),
+    ('BR', 'Brazil'),
+    ('MX', 'Mexico')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO regions (country, name)
 VALUES 
+    -- Senegal regions
     ('SN', 'Dakar'),
     ('SN', 'Thiès'),
     ('SN', 'Saint-Louis'),
@@ -361,7 +430,19 @@ VALUES
     ('SN', 'Kolda'),
     ('SN', 'Ziguinchor'),
     ('SN', 'Sédhiou'),
-    ('SN', 'Matam')
+    ('SN', 'Matam'),
+    -- France regions (sample)
+    ('FR', 'Île-de-France'),
+    ('FR', 'Provence-Alpes-Côte d\'Azur'),
+    ('FR', 'Auvergne-Rhône-Alpes'),
+    ('FR', 'Nouvelle-Aquitaine'),
+    ('FR', 'Occitanie'),
+    -- US states (sample)
+    ('US', 'California'),
+    ('US', 'Texas'),
+    ('US', 'Florida'),
+    ('US', 'New York'),
+    ('US', 'Illinois')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO categories (label)

@@ -1,10 +1,34 @@
-# Migration Execution Guide
+# Database Migration Guide
 
-## Quick Start
+## Prerequisites
+
+1. **Create Supabase Project**
+   - Go to https://supabase.com
+   - Create a new project
+   - Wait for setup to complete
+
+2. **Enable Extensions**
+   - Go to Database → Extensions
+   - Enable `uuid-ossp` and `postgis`
+
+3. **Update Environment Variables**
+   - Copy values from Project Settings → API
+   - Update your `.env` file
+
+## Migration Steps
+
+### Step 1: Run Initial Schema
 
 1. Open Supabase Dashboard → SQL Editor
 2. Copy content from `0001_initial_schema.sql`
 3. Click "Run"
+4. Wait for completion (may take 30-60 seconds)
+
+### Step 2: Run Performance Indexes (Optional)
+
+1. Copy content from `0002_performance_indexes.sql`
+2. Click "Run"
+3. Wait for completion
 
 ## Verification Steps
 
@@ -12,77 +36,151 @@
 -- Check if tables were created
 SELECT table_name 
 FROM information_schema.tables 
-WHERE table_schema = 'public';
+WHERE table_schema = 'public'
+ORDER BY table_name;
 
--- Verify ENUMs
-SELECT t.typname, e.enumlabel
-FROM pg_type t 
-JOIN pg_enum e ON t.oid = e.enumtypid;
+-- Verify initial data
+SELECT 'countries' as table_name, COUNT(*) as count FROM countries
+UNION ALL
+SELECT 'regions', COUNT(*) FROM regions
+UNION ALL
+SELECT 'categories', COUNT(*) FROM categories
+UNION ALL
+SELECT 'units', COUNT(*) FROM units;
 
 -- Check RLS policies
 SELECT tablename, policyname, permissive, roles, cmd 
 FROM pg_policies 
-WHERE schemaname = 'public';
+WHERE schemaname = 'public'
+ORDER BY tablename, policyname;
 
 -- Verify triggers
 SELECT 
     trigger_name,
     event_manipulation,
-    event_object_table,
-    action_statement
+    event_object_table
 FROM information_schema.triggers
-WHERE trigger_schema = 'public';
+WHERE trigger_schema = 'public'
+ORDER BY event_object_table, trigger_name;
 ```
 
-## Common Issues
+## Troubleshooting
 
-### Missing PostGIS
+### Common Issues
+
+#### 1. PostGIS Extension Error
+```
+ERROR: extension "postgis" is not available
+```
+**Solution:** Enable PostGIS in Database → Extensions
+
+#### 2. Permission Denied
+```
+ERROR: permission denied for schema public
+```
+**Solution:** Use service role key, not anon key
+
+#### 3. Function Already Exists
+```
+ERROR: function already exists
+```
+**Solution:** This is normal, migrations use `CREATE OR REPLACE`
+
+#### 4. RLS Policy Conflicts
+```
+ERROR: policy already exists
+```
+**Solution:** Drop existing policies first:
+```sql
+DROP POLICY IF EXISTS "policy_name" ON table_name;
+```
+
+### Recovery Steps
+
+If migration fails:
+
+1. **Check the error message** in SQL Editor output
+2. **Fix the specific issue** (usually extension or permission)
+3. **Re-run the migration** (safe to run multiple times)
+4. **Verify completion** using verification queries
+
+### Manual Fixes
+
+#### Enable PostGIS Manually
 ```sql
 CREATE EXTENSION IF NOT EXISTS "postgis";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
 
-### RLS Issues
+#### Reset RLS Policies
 ```sql
--- Enable RLS for specific table
-ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+-- Disable RLS temporarily
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 
--- Add basic policy
-CREATE POLICY "Allow all" ON table_name
-    FOR ALL
-    TO authenticated
-    USING (true);
+-- Drop all policies
+DROP POLICY IF EXISTS "Users can view all profiles" ON users;
+
+-- Re-enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Recreate policies (copy from migration file)
 ```
 
-### Trigger Problems
+## Testing the Setup
+
+After successful migration:
+
+### 1. Test Authentication
 ```sql
--- Recreate trigger function
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Function body
-END;
-$$ LANGUAGE plpgsql;
+-- Check if auth trigger works
+INSERT INTO auth.users (id, email) VALUES 
+(gen_random_uuid(), 'test@example.com');
 
--- Recreate trigger
-DROP TRIGGER IF EXISTS trigger_name ON table_name;
-CREATE TRIGGER trigger_name
-    AFTER INSERT ON table_name
-    FOR EACH ROW
-    EXECUTE FUNCTION function_name();
+-- Verify user profile was created
+SELECT * FROM users WHERE email = 'test@example.com';
 ```
 
-## Data Recovery
+### 2. Test Product Creation
+```sql
+-- Insert test product
+INSERT INTO products (seller_id, title, price, category_id) 
+VALUES (
+    (SELECT id FROM users LIMIT 1),
+    'Test Product',
+    100.00,
+    (SELECT id FROM categories LIMIT 1)
+);
+```
 
-If something goes wrong:
+### 3. Test Geographic Features
+```sql
+-- Test nearby products function
+SELECT * FROM get_nearby_products(14.6928, -17.4467, 50, 10);
+```
 
-1. Check error messages
-2. Fix specific issues
-3. Rerun migration
-4. If needed, restore from backup
+## Success Indicators
 
-## Best Practices
+✅ **All tables created** (11 main tables)
+✅ **Reference data inserted** (countries, regions, categories, units)
+✅ **RLS policies active** (check with verification queries)
+✅ **Triggers working** (auth user creation)
+✅ **Extensions enabled** (PostGIS, uuid-ossp)
+✅ **Indexes created** (performance optimization)
 
-1. Always test in development
-2. Backup before migration
-3. Monitor logs during execution
-4. Verify all components after migration
+## Next Steps
+
+1. **Update your app's environment variables**
+2. **Test user registration flow**
+3. **Verify API endpoints work**
+4. **Test geographic features** (if using location)
+5. **Monitor performance** with real data
+
+## Support
+
+If you need help:
+
+1. **Check Supabase logs** in Dashboard → Logs
+2. **Review error messages** carefully
+3. **Verify environment variables** are correct
+4. **Ensure extensions are enabled**
+5. **Test with simple queries first**

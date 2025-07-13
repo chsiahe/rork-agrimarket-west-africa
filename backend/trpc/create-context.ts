@@ -1,5 +1,5 @@
 import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { createClient } from '@supabase/supabase-js';
 import { User, UserRole } from '@/types/user';
@@ -148,17 +148,18 @@ async function connectToSupabase() {
     
     // Test connection by checking if we can access the database
     const { data, error } = await supabase
-      .from('users')
-      .select('count')
+      .from('countries')
+      .select('code')
       .limit(1);
     
-    if (error && error.code !== 'PGRST116') { // PGRST116 = table doesn't exist, which is fine for initial setup
-      console.error('Supabase connection failed:', error);
-      // Don't throw error, just log it and return the client anyway
+    if (error && !['PGRST116', 'PGRST301'].includes(error.code)) { 
+      // PGRST116 = table doesn't exist, PGRST301 = JWT expired/invalid
+      console.error('Supabase connection test failed:', error);
       console.log('Continuing with Supabase client despite connection test failure');
+    } else {
+      console.log('Connected to Supabase successfully');
     }
     
-    console.log('Connected to Supabase successfully');
     return supabase;
   } catch (error) {
     console.error('Supabase connection failed:', error);
@@ -223,7 +224,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
 
   // If no valid token, use default user for demo purposes
   if (!user && token) {
-    user = mockUsers[token] || mockUsers['1'];
+    user = mockUsers[token] || null;
   }
 
   return {
@@ -251,7 +252,10 @@ export const publicProcedure = t.procedure;
 // Protected procedure that requires authentication
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.user) {
-    throw new Error('Non autorisé - Veuillez vous connecter');
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Non autorisé - Veuillez vous connecter',
+    });
   }
   return next({
     ctx: {
@@ -264,7 +268,10 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 // Admin procedure that requires admin role
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== 'admin') {
-    throw new Error('Accès refusé - Droits administrateur requis');
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Accès refusé - Droits administrateur requis',
+    });
   }
   return next({
     ctx,
