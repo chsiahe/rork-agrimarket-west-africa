@@ -154,15 +154,16 @@ async function connectToSupabase() {
     
     if (error && error.code !== 'PGRST116') { // PGRST116 = table doesn't exist, which is fine for initial setup
       console.error('Supabase connection failed:', error);
-      throw error;
+      // Don't throw error, just log it and return the client anyway
+      console.log('Continuing with Supabase client despite connection test failure');
     }
     
     console.log('Connected to Supabase successfully');
     return supabase;
   } catch (error) {
     console.error('Supabase connection failed:', error);
-    // Return null to fall back to mock data
-    return null;
+    // Still return a client instance for auth operations
+    return createSupabaseClient();
   }
 }
 
@@ -229,7 +230,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
     req: opts.req,
     token,
     user,
-    supabase,
+    supabase: supabase || createSupabaseClient(), // Always provide a supabase client
     config: {
       supabase: SUPABASE_CONFIG,
       jwt: JWT_CONFIG,

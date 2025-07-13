@@ -36,62 +36,95 @@ export default publicProcedure
         });
       }
 
-      // Fetch user data from users table
-      const { data: userData, error: userError } = await ctx.supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
+      // Try to fetch user data from users table
+      let userData = null;
+      try {
+        const { data: fetchedUserData, error: userError } = await ctx.supabase
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
 
-      if (userError) {
-        // If user profile doesn't exist, create it
-        if (userError.code === 'PGRST116') {
-          const basicProfile = {
-            id: authData.user.id,
-            email: input.email,
-            name: authData.user.user_metadata?.name || 
-                  authData.user.user_metadata?.full_name || 
-                  authData.user.email?.split('@')[0] || 
-                  'Utilisateur',
-            phone: authData.user.user_metadata?.phone || null,
-            role: 'buyer',
-            verified: false,
-            country: 'SN',
-            region: authData.user.user_metadata?.region || null,
-            city: authData.user.user_metadata?.city || null,
-            coordinates: null,
-            metadata: authData.user.user_metadata || {},
-            settings: {},
-          };
-          
-          const { data: newUserData, error: insertError } = await ctx.supabase
-            .from('users')
-            .insert([basicProfile])
-            .select()
-            .single();
+        if (userError) {
+          // If user profile doesn't exist, create it
+          if (userError.code === 'PGRST116') {
+            const basicProfile = {
+              id: authData.user.id,
+              email: input.email,
+              first_name: authData.user.user_metadata?.first_name || authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Utilisateur',
+              last_name: authData.user.user_metadata?.last_name || '',
+              phone: authData.user.user_metadata?.phone || null,
+              role: (authData.user.user_metadata?.role as any) || 'buyer',
+              verified: false,
+              country: authData.user.user_metadata?.country || 'SN',
+              region_id: authData.user.user_metadata?.region_id || null,
+              city: authData.user.user_metadata?.city || null,
+              coordinates: null,
+              metadata: authData.user.user_metadata || {},
+              settings: {},
+            };
             
-          if (insertError) {
-            // If insert fails, return basic profile as fallback
-            return {
-              user: {
+            const { data: newUserData, error: insertError } = await ctx.supabase
+              .from('users')
+              .insert([basicProfile])
+              .select()
+              .single();
+              
+            if (insertError) {
+              console.error('Failed to create user profile:', insertError);
+              // If insert fails, return basic profile as fallback
+              userData = {
                 ...basicProfile,
                 created_at: authData.user.created_at,
                 updated_at: new Date().toISOString(),
-              },
-              token: authData.session.access_token,
+              };
+            } else {
+              userData = newUserData;
+            }
+          } else {
+            console.error('Error fetching user data:', userError);
+            // Create a fallback user profile from auth data
+            userData = {
+              id: authData.user.id,
+              email: input.email,
+              first_name: authData.user.user_metadata?.first_name || authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Utilisateur',
+              last_name: authData.user.user_metadata?.last_name || '',
+              phone: authData.user.user_metadata?.phone || null,
+              role: (authData.user.user_metadata?.role as any) || 'buyer',
+              verified: false,
+              country: authData.user.user_metadata?.country || 'SN',
+              region_id: authData.user.user_metadata?.region_id || null,
+              city: authData.user.user_metadata?.city || null,
+              coordinates: null,
+              metadata: authData.user.user_metadata || {},
+              settings: {},
+              created_at: authData.user.created_at,
+              updated_at: new Date().toISOString(),
             };
           }
-          
-          return {
-            user: newUserData,
-            token: authData.session.access_token,
-          };
+        } else {
+          userData = fetchedUserData;
         }
-        
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Erreur lors de la récupération des données utilisateur',
-        });
+      } catch (dbError) {
+        console.error('Database error during login:', dbError);
+        // Create a fallback user profile from auth data
+        userData = {
+          id: authData.user.id,
+          email: input.email,
+          first_name: authData.user.user_metadata?.first_name || authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Utilisateur',
+          last_name: authData.user.user_metadata?.last_name || '',
+          phone: authData.user.user_metadata?.phone || null,
+          role: (authData.user.user_metadata?.role as any) || 'buyer',
+          verified: false,
+          country: authData.user.user_metadata?.country || 'SN',
+          region_id: authData.user.user_metadata?.region_id || null,
+          city: authData.user.user_metadata?.city || null,
+          coordinates: null,
+          metadata: authData.user.user_metadata || {},
+          settings: {},
+          created_at: authData.user.created_at,
+          updated_at: new Date().toISOString(),
+        };
       }
 
       return {

@@ -62,14 +62,14 @@ export function Dropdown({
     return [...startsWithMatches, ...containsMatches];
   }, [options, searchQuery, searchable]);
 
-  // Reset highlighted index when filtered options change
+  // Reset highlighted index when search query changes
   useEffect(() => {
-    if (filteredOptions.length > 0) {
+    if (searchQuery.trim()) {
       setHighlightedIndex(0);
     } else {
       setHighlightedIndex(-1);
     }
-  }, [filteredOptions.length]);
+  }, [searchQuery]);
 
   const handleSelect = useCallback((optionValue: string) => {
     onSelect(optionValue);
@@ -99,16 +99,7 @@ export function Dropdown({
 
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
-    
-    if (autoComplete && text.trim() && filteredOptions.length > 0) {
-      // Auto-complete functionality
-      const firstMatch = filteredOptions[0];
-      if (firstMatch && firstMatch.label.toLowerCase().startsWith(text.toLowerCase())) {
-        // Don't auto-select, just highlight
-        setHighlightedIndex(0);
-      }
-    }
-  }, [autoComplete, filteredOptions]);
+  }, []);
 
   const handleKeyPress = useCallback((e: any) => {
     if (Platform.OS === 'web') {
